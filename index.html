@@ -24,12 +24,13 @@
         <input id="searchInput" type="text" placeholder="예: NewJeans, The Weeknd" autocomplete="off">
         <button id="searchBtn" type="button">검색</button>
       </div>
-      <p id="statusText" class="status">트렌딩 30곡을 확인하세요.</p>
+      <p id="statusText" class="status">트렌딩 30곡 중 하나를 선택하면 연관 30곡이 재생됩니다.</p>
       <div class="player-wrap">
         <div class="player-head">
           <p id="nowPlaying" class="now-playing">선택된 곡 없음</p>
           <button id="stopBtn" type="button" class="stop-btn">정지</button>
         </div>
+        <p id="queueInfo" class="queue-info">연관 재생 대기 중</p>
         <audio id="audioPlayer" controls preload="none"></audio>
       </div>
       <ul id="trackList" class="tracks" aria-live="polite"></ul>
