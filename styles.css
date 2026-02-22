@@ -108,6 +108,42 @@ button {
   font-size: 13px;
 }
 
+.player-wrap {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.player-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.now-playing {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.stop-btn {
+  height: 32px;
+  min-width: 56px;
+  border-radius: 9px;
+  padding: 0 10px;
+  font-size: 12px;
+  background: #191919;
+}
+
+audio {
+  margin-top: 8px;
+  width: 100%;
+  height: 40px;
+}
+
 .tracks {
   list-style: none;
   margin: 0;
@@ -119,18 +155,34 @@ button {
 .track {
   border: 1px solid var(--line);
   border-radius: 12px;
-  padding: 10px 11px;
+  padding: 0;
   background: #fff;
 }
 
-.track strong {
+.track-btn {
+  width: 100%;
+  border: 0;
+  height: auto;
+  text-align: left;
+  border-radius: 12px;
+  padding: 10px 11px;
+  background: transparent;
+  color: var(--ink);
+}
+
+.track-btn strong {
   display: block;
   font-size: 15px;
 }
 
-.track span {
+.track-btn span {
   color: var(--ink-muted);
   font-size: 13px;
+}
+
+.track.active {
+  border-color: color-mix(in srgb, var(--accent) 60%, #8ecaa8 40%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, white 82%);
 }
 
 @keyframes rise {
