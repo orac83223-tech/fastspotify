@@ -19,12 +19,23 @@
     </header>
 
     <section class="panel">
+      <label for="clientIdInput">Spotify 연결</label>
+      <div class="auth-row">
+        <input id="clientIdInput" type="text" placeholder="Spotify Client ID 입력" autocomplete="off">
+        <button id="saveClientIdBtn" type="button">저장</button>
+      </div>
+      <div class="auth-actions">
+        <button id="loginBtn" type="button">Spotify 로그인</button>
+        <button id="logoutBtn" type="button" class="stop-btn">로그아웃</button>
+      </div>
+      <p id="authStatus" class="status">Spotify Client ID 저장 후 로그인하세요.</p>
+
       <label for="searchInput">곡/아티스트 검색</label>
       <div class="search-row">
         <input id="searchInput" type="text" placeholder="예: NewJeans, The Weeknd" autocomplete="off">
         <button id="searchBtn" type="button">검색</button>
       </div>
-      <p id="statusText" class="status">트렌딩 30곡 중 하나를 선택하면 연관 30곡이 재생됩니다.</p>
+      <p id="statusText" class="status">Spotify 로그인 후 트랙 목록을 불러옵니다.</p>
       <div class="player-wrap">
         <div class="player-head">
           <p id="nowPlaying" class="now-playing">선택된 곡 없음</p>

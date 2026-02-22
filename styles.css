@@ -71,6 +71,20 @@ label {
   font-weight: 500;
 }
 
+.auth-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.auth-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .search-row {
   display: grid;
   grid-template-columns: 1fr auto;

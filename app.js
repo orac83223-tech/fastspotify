@@ -1,74 +1,19 @@
-const trackPool = [
-  { title: "Blinding Lights", artist: "The Weeknd", tags: ["pop", "synthwave", "night"] },
-  { title: "Save Your Tears", artist: "The Weeknd", tags: ["pop", "synthwave", "night"] },
-  { title: "Starboy", artist: "The Weeknd", tags: ["pop", "rnb", "night"] },
-  { title: "Levitating", artist: "Dua Lipa", tags: ["pop", "dance", "party"] },
-  { title: "Dance The Night", artist: "Dua Lipa", tags: ["pop", "dance", "party"] },
-  { title: "Don't Start Now", artist: "Dua Lipa", tags: ["pop", "dance", "party"] },
-  { title: "As It Was", artist: "Harry Styles", tags: ["pop", "indie", "calm"] },
-  { title: "Watermelon Sugar", artist: "Harry Styles", tags: ["pop", "indie", "summer"] },
-  { title: "Adore You", artist: "Harry Styles", tags: ["pop", "indie", "calm"] },
-  { title: "Cruel Summer", artist: "Taylor Swift", tags: ["pop", "summer", "upbeat"] },
-  { title: "Style", artist: "Taylor Swift", tags: ["pop", "synthwave", "upbeat"] },
-  { title: "Anti-Hero", artist: "Taylor Swift", tags: ["pop", "midtempo", "night"] },
-  { title: "Shape of You", artist: "Ed Sheeran", tags: ["pop", "acoustic", "upbeat"] },
-  { title: "Perfect", artist: "Ed Sheeran", tags: ["pop", "acoustic", "calm"] },
-  { title: "Shivers", artist: "Ed Sheeran", tags: ["pop", "dance", "upbeat"] },
-  { title: "Stay", artist: "The Kid LAROI", tags: ["pop", "electro", "upbeat"] },
-  { title: "Without You", artist: "The Kid LAROI", tags: ["pop", "electro", "sad"] },
-  { title: "Flowers", artist: "Miley Cyrus", tags: ["pop", "empower", "midtempo"] },
-  { title: "Wrecking Ball", artist: "Miley Cyrus", tags: ["pop", "ballad", "sad"] },
-  { title: "Vampire", artist: "Olivia Rodrigo", tags: ["pop", "rock", "sad"] },
-  { title: "good 4 u", artist: "Olivia Rodrigo", tags: ["pop", "rock", "upbeat"] },
-  { title: "drivers license", artist: "Olivia Rodrigo", tags: ["pop", "ballad", "sad"] },
-  { title: "Unholy", artist: "Sam Smith", tags: ["pop", "dark", "dance"] },
-  { title: "I'm Not The Only One", artist: "Sam Smith", tags: ["pop", "ballad", "sad"] },
-  { title: "Fast Car", artist: "Luke Combs", tags: ["country", "acoustic", "calm"] },
-  { title: "Beautiful Crazy", artist: "Luke Combs", tags: ["country", "acoustic", "calm"] },
-  { title: "Butter", artist: "BTS", tags: ["kpop", "dance", "bright"] },
-  { title: "Dynamite", artist: "BTS", tags: ["kpop", "dance", "bright"] },
-  { title: "Boy With Luv", artist: "BTS", tags: ["kpop", "dance", "bright"] },
-  { title: "Seven", artist: "Jungkook", tags: ["kpop", "pop", "summer"] },
-  { title: "Standing Next to You", artist: "Jungkook", tags: ["kpop", "pop", "groove"] },
-  { title: "Super Shy", artist: "NewJeans", tags: ["kpop", "dance", "bright"] },
-  { title: "Hype Boy", artist: "NewJeans", tags: ["kpop", "dance", "bright"] },
-  { title: "Ditto", artist: "NewJeans", tags: ["kpop", "calm", "winter"] },
-  { title: "OMG", artist: "NewJeans", tags: ["kpop", "groove", "bright"] },
-  { title: "ETA", artist: "NewJeans", tags: ["kpop", "dance", "party"] },
-  { title: "Attention", artist: "NewJeans", tags: ["kpop", "groove", "calm"] },
-  { title: "I AM", artist: "IVE", tags: ["kpop", "anthem", "bright"] },
-  { title: "After LIKE", artist: "IVE", tags: ["kpop", "dance", "bright"] },
-  { title: "Love Dive", artist: "IVE", tags: ["kpop", "dark", "groove"] },
-  { title: "Perfect Night", artist: "LE SSERAFIM", tags: ["kpop", "dance", "night"] },
-  { title: "UNFORGIVEN", artist: "LE SSERAFIM", tags: ["kpop", "anthem", "strong"] },
-  { title: "Eve, Psyche & The Bluebeard's wife", artist: "LE SSERAFIM", tags: ["kpop", "dance", "club"] },
-  { title: "Magnetic", artist: "ILLIT", tags: ["kpop", "bright", "dance"] },
-  { title: "Lucky Girl Syndrome", artist: "ILLIT", tags: ["kpop", "bright", "calm"] },
-  { title: "Spicy", artist: "aespa", tags: ["kpop", "electro", "strong"] },
-  { title: "Drama", artist: "aespa", tags: ["kpop", "dark", "strong"] },
-  { title: "Next Level", artist: "aespa", tags: ["kpop", "electro", "strong"] },
-  { title: "S-Class", artist: "Stray Kids", tags: ["kpop", "hiphop", "strong"] },
-  { title: "MANIAC", artist: "Stray Kids", tags: ["kpop", "hiphop", "dark"] },
-  { title: "God's Menu", artist: "Stray Kids", tags: ["kpop", "hiphop", "strong"] },
-  { title: "Pink Venom", artist: "BLACKPINK", tags: ["kpop", "hiphop", "strong"] },
-  { title: "Shut Down", artist: "BLACKPINK", tags: ["kpop", "hiphop", "dark"] },
-  { title: "How You Like That", artist: "BLACKPINK", tags: ["kpop", "dance", "strong"] },
-  { title: "Cupid", artist: "FIFTY FIFTY", tags: ["kpop", "soft", "bright"] },
-  { title: "Queencard", artist: "(G)I-DLE", tags: ["kpop", "dance", "strong"] },
-  { title: "TOMBOY", artist: "(G)I-DLE", tags: ["kpop", "rock", "strong"] },
-  { title: "Bam Yang Gang", artist: "BIBI", tags: ["kpop", "indie", "calm"] },
-  { title: "BIBI Vengeance", artist: "BIBI", tags: ["kpop", "hiphop", "dark"] }
-];
-
-const tracks = trackPool.map((track, index) => ({
-  ...track,
-  id: String(index + 1),
-  previewUrl: `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${(index % 16) + 1}.mp3`
-}));
-
-const seedTracks = tracks.slice(0, 30);
+const SPOTIFY_AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
+const SPOTIFY_TOKEN_ENDPOINT = "https://accounts.spotify.com/api/token";
+const SPOTIFY_API_BASE = "https://api.spotify.com/v1";
+const REDIRECT_URI = `${window.location.origin}${window.location.pathname}`;
+const TOP_PLAYLIST_ID = "37i9dQZEVXbMDoHDwVN2tF"; // Top 50 Global
 const RELATED_PLAYLIST_SIZE = 30;
+const STORAGE_KEY = "fastspotify_spotify_auth";
+const CLIENT_ID_KEY = "fastspotify_client_id";
+const CODE_VERIFIER_KEY = "fastspotify_code_verifier";
+const AUTH_STATE_KEY = "fastspotify_auth_state";
 
+const clientIdInput = document.getElementById("clientIdInput");
+const saveClientIdBtn = document.getElementById("saveClientIdBtn");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const authStatus = document.getElementById("authStatus");
 const input = document.getElementById("searchInput");
 const button = document.getElementById("searchBtn");
 const list = document.getElementById("trackList");
@@ -78,61 +23,228 @@ const queueInfo = document.getElementById("queueInfo");
 const audioPlayer = document.getElementById("audioPlayer");
 const stopBtn = document.getElementById("stopBtn");
 
-let currentTracks = [...seedTracks];
-let currentTrackId = null;
+let currentTracks = [];
+let seedTracks = [];
 let activeQueue = [];
 let queueIndex = -1;
+let currentTrackId = null;
+let spotifyAuth = loadSpotifyAuth();
 
-function shareTagCount(a, b) {
-  const set = new Set(a.tags);
-  let count = 0;
-  b.tags.forEach((tag) => {
-    if (set.has(tag)) {
-      count += 1;
-    }
+function loadSpotifyAuth() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function saveSpotifyAuth(data) {
+  spotifyAuth = data;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function clearSpotifyAuth() {
+  spotifyAuth = null;
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+function getStoredClientId() {
+  return localStorage.getItem(CLIENT_ID_KEY) || "";
+}
+
+function setStoredClientId(clientId) {
+  localStorage.setItem(CLIENT_ID_KEY, clientId.trim());
+}
+
+function randomString(length) {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let out = "";
+  for (let i = 0; i < length; i += 1) {
+    out += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return out;
+}
+
+async function sha256(text) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return new Uint8Array(hash);
+}
+
+function base64UrlEncode(bytes) {
+  let binary = "";
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
   });
-  return count;
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function scoreCandidate(seed, candidate) {
-  if (seed.id === candidate.id) {
-    return -1;
+async function beginSpotifyLogin() {
+  const clientId = getStoredClientId();
+  if (!clientId) {
+    authStatus.textContent = "먼저 Spotify Client ID를 입력하고 저장하세요.";
+    return;
   }
-  let score = 0;
-  if (seed.artist === candidate.artist) {
-    score += 10;
-  }
-  score += shareTagCount(seed, candidate) * 3;
-  return score;
+
+  const verifier = randomString(96);
+  const challenge = base64UrlEncode(await sha256(verifier));
+  const state = randomString(16);
+  localStorage.setItem(CODE_VERIFIER_KEY, verifier);
+  localStorage.setItem(AUTH_STATE_KEY, state);
+
+  const params = new URLSearchParams({
+    response_type: "code",
+    client_id: clientId,
+    redirect_uri: REDIRECT_URI,
+    code_challenge_method: "S256",
+    code_challenge: challenge,
+    state
+  });
+  window.location.href = `${SPOTIFY_AUTH_ENDPOINT}?${params.toString()}`;
 }
 
-function buildRelatedPlaylist(seed) {
-  const ranked = tracks
-    .filter((track) => track.id !== seed.id)
-    .map((track) => ({
-      track,
-      score: scoreCandidate(seed, track)
-    }))
-    .sort((a, b) => b.score - a.score || Number(a.track.id) - Number(b.track.id))
-    .map((item) => item.track);
+async function exchangeCodeForToken(code) {
+  const verifier = localStorage.getItem(CODE_VERIFIER_KEY);
+  const clientId = getStoredClientId();
+  if (!verifier || !clientId) {
+    throw new Error("로그인 세션 정보가 없습니다.");
+  }
 
-  const playlist = [seed, ...ranked.slice(0, RELATED_PLAYLIST_SIZE - 1)];
+  const body = new URLSearchParams({
+    client_id: clientId,
+    grant_type: "authorization_code",
+    code,
+    redirect_uri: REDIRECT_URI,
+    code_verifier: verifier
+  });
 
-  if (playlist.length < RELATED_PLAYLIST_SIZE) {
-    const usedIds = new Set(playlist.map((track) => track.id));
-    tracks.forEach((track) => {
-      if (playlist.length < RELATED_PLAYLIST_SIZE && !usedIds.has(track.id)) {
-        playlist.push(track);
+  const response = await fetch(SPOTIFY_TOKEN_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body
+  });
+  if (!response.ok) {
+    throw new Error("토큰 발급 실패");
+  }
+  const data = await response.json();
+  saveSpotifyAuth({
+    access_token: data.access_token,
+    refresh_token: data.refresh_token || "",
+    expires_at: Date.now() + data.expires_in * 1000
+  });
+  localStorage.removeItem(CODE_VERIFIER_KEY);
+}
+
+async function refreshAccessTokenIfNeeded() {
+  if (!spotifyAuth) {
+    throw new Error("로그인이 필요합니다.");
+  }
+
+  const in30s = Date.now() + 30 * 1000;
+  if (spotifyAuth.expires_at > in30s) {
+    return spotifyAuth.access_token;
+  }
+
+  if (!spotifyAuth.refresh_token) {
+    clearSpotifyAuth();
+    throw new Error("세션이 만료되었습니다. 다시 로그인하세요.");
+  }
+
+  const clientId = getStoredClientId();
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: spotifyAuth.refresh_token,
+    client_id: clientId
+  });
+
+  const response = await fetch(SPOTIFY_TOKEN_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body
+  });
+  if (!response.ok) {
+    clearSpotifyAuth();
+    throw new Error("토큰 갱신 실패");
+  }
+
+  const data = await response.json();
+  saveSpotifyAuth({
+    access_token: data.access_token,
+    refresh_token: data.refresh_token || spotifyAuth.refresh_token,
+    expires_at: Date.now() + data.expires_in * 1000
+  });
+  return spotifyAuth.access_token;
+}
+
+async function spotifyFetch(path) {
+  const token = await refreshAccessTokenIfNeeded();
+  const response = await fetch(`${SPOTIFY_API_BASE}${path}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!response.ok) {
+    throw new Error(`Spotify API 실패: ${response.status}`);
+  }
+  return response.json();
+}
+
+function mapTrack(track) {
+  if (!track || !track.id || !track.name || !track.artists || !track.artists.length) {
+    return null;
+  }
+  return {
+    id: track.id,
+    title: track.name,
+    artist: track.artists.map((a) => a.name).join(", "),
+    artistId: track.artists[0].id || "",
+    previewUrl: track.preview_url || "",
+    openUrl: track.external_urls?.spotify || ""
+  };
+}
+
+async function fetchSeedTracks() {
+  const data = await spotifyFetch(`/playlists/${TOP_PLAYLIST_ID}/tracks?market=US&limit=30`);
+  const mapped = data.items.map((item) => mapTrack(item.track)).filter(Boolean);
+  seedTracks = mapped;
+  currentTracks = [...seedTracks];
+}
+
+async function fetchRelatedTracks(seedTrack) {
+  try {
+    const data = await spotifyFetch(
+      `/recommendations?market=US&limit=${RELATED_PLAYLIST_SIZE}&seed_tracks=${encodeURIComponent(seedTrack.id)}`
+    );
+    const mapped = data.tracks.map(mapTrack).filter(Boolean);
+    if (mapped.length) {
+      return mapped;
+    }
+  } catch {
+    // fallback
+  }
+
+  if (!seedTrack.artistId) {
+    return [seedTrack];
+  }
+
+  const relatedArtists = await spotifyFetch(`/artists/${seedTrack.artistId}/related-artists`);
+  const artistIds = [seedTrack.artistId, ...relatedArtists.artists.map((a) => a.id)].slice(0, 6);
+  const collected = [seedTrack];
+  const seen = new Set([seedTrack.id]);
+
+  for (const artistId of artistIds) {
+    const top = await spotifyFetch(`/artists/${artistId}/top-tracks?market=US`);
+    top.tracks.forEach((track) => {
+      const mapped = mapTrack(track);
+      if (mapped && !seen.has(mapped.id) && collected.length < RELATED_PLAYLIST_SIZE) {
+        seen.add(mapped.id);
+        collected.push(mapped);
       }
     });
+    if (collected.length >= RELATED_PLAYLIST_SIZE) {
+      break;
+    }
   }
-  return playlist.slice(0, RELATED_PLAYLIST_SIZE);
-}
-
-function updatePlayerUI(track) {
-  const position = queueIndex + 1;
-  nowPlaying.textContent = `재생 중: ${track.title} - ${track.artist}`;
-  queueInfo.textContent = `연관 재생 ${position}/${activeQueue.length}`;
+  return collected.slice(0, RELATED_PLAYLIST_SIZE);
 }
 
 function renderTracks(viewTracks) {
@@ -143,39 +255,66 @@ function renderTracks(viewTracks) {
     if (track.id === currentTrackId) {
       item.classList.add("active");
     }
+
+    const previewLabel = track.previewUrl ? "미리듣기 가능" : "미리듣기 없음";
     item.innerHTML = `
       <button class="track-btn" type="button" data-track-id="${track.id}">
         <strong>${track.title}</strong>
-        <span>${track.artist}</span>
+        <span>${track.artist} · ${previewLabel}</span>
       </button>
     `;
     list.appendChild(item);
   });
 }
 
-function playTrackInQueue(index) {
-  if (index < 0 || index >= activeQueue.length) {
+function updatePlayerUI(track) {
+  const pos = queueIndex + 1;
+  nowPlaying.textContent = `재생 중: ${track.title} - ${track.artist}`;
+  queueInfo.textContent = `연관 재생 ${pos}/${activeQueue.length}`;
+}
+
+function playTrackInQueue(startIndex) {
+  let idx = startIndex;
+  while (idx < activeQueue.length && !activeQueue[idx].previewUrl) {
+    idx += 1;
+  }
+
+  if (idx >= activeQueue.length) {
+    statusText.textContent = "재생 가능한 미리듣기 URL이 없습니다. Spotify 앱에서 전체 곡을 재생해 주세요.";
+    nowPlaying.textContent = "재생 가능한 곡 없음";
+    queueInfo.textContent = "연관 재생 종료";
     return;
   }
-  queueIndex = index;
-  const target = activeQueue[queueIndex];
-  currentTrackId = target.id;
-  updatePlayerUI(target);
-  audioPlayer.src = target.previewUrl;
+
+  queueIndex = idx;
+  const track = activeQueue[idx];
+  currentTrackId = track.id;
+  audioPlayer.src = track.previewUrl;
+  updatePlayerUI(track);
   audioPlayer.play().catch(() => {
-    statusText.textContent = "자동 재생이 차단되었습니다. 재생 버튼을 다시 터치해 주세요.";
+    statusText.textContent = "자동 재생이 차단되었습니다. 플레이어에서 재생 버튼을 눌러주세요.";
   });
   renderTracks(currentTracks);
 }
 
-function startRelatedPlayback(seedTrackId) {
-  const seed = tracks.find((track) => track.id === seedTrackId);
+async function startRelatedPlayback(seedTrackId) {
+  const seed = seedTracks.find((track) => track.id === seedTrackId) || currentTracks.find((track) => track.id === seedTrackId);
   if (!seed) {
     return;
   }
-  activeQueue = buildRelatedPlaylist(seed);
-  statusText.textContent = `"${seed.title}" 기준 연관 30곡 재생 목록 생성`;
-  playTrackInQueue(0);
+
+  statusText.textContent = `"${seed.title}" 기준 연관 30곡 조회 중...`;
+  try {
+    activeQueue = await fetchRelatedTracks(seed);
+    if (!activeQueue.length) {
+      statusText.textContent = "연관 곡을 찾지 못했습니다.";
+      return;
+    }
+    statusText.textContent = `"${seed.title}" 기준 연관 ${activeQueue.length}곡 재생 목록 생성`;
+    playTrackInQueue(0);
+  } catch (error) {
+    statusText.textContent = `연관 곡 조회 실패: ${error.message}`;
+  }
 }
 
 function stopPlayback() {
@@ -192,17 +331,95 @@ function stopPlayback() {
 function handleSearch() {
   const query = input.value.trim().toLowerCase();
   const filtered = seedTracks.filter((track) => {
-    return (
-      track.title.toLowerCase().includes(query) ||
-      track.artist.toLowerCase().includes(query)
-    );
+    return track.title.toLowerCase().includes(query) || track.artist.toLowerCase().includes(query);
   });
   currentTracks = query ? filtered : seedTracks;
   statusText.textContent = query
-    ? `검색 결과 ${currentTracks.length}건 (선택 시 연관 30곡 재생)`
-    : "트렌딩 30곡 중 하나를 선택하면 연관 30곡이 재생됩니다.";
+    ? `검색 결과 ${currentTracks.length}건 (클릭 시 연관 30곡 재생)`
+    : "목록에서 한 곡을 누르면 Spotify 연관 30곡을 생성해 재생합니다.";
   renderTracks(currentTracks);
 }
+
+function getAuthQuery() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    code: params.get("code"),
+    state: params.get("state"),
+    error: params.get("error")
+  };
+}
+
+function refreshAuthUI() {
+  const clientId = getStoredClientId();
+  clientIdInput.value = clientId;
+  loginBtn.disabled = !clientId;
+  const connected = Boolean(spotifyAuth?.access_token);
+  authStatus.textContent = connected
+    ? "Spotify 연결됨"
+    : "Spotify Client ID 저장 후 로그인하세요.";
+}
+
+async function bootstrapAuth() {
+  const { code, state, error } = getAuthQuery();
+  if (error) {
+    authStatus.textContent = `로그인 실패: ${error}`;
+    return;
+  }
+
+  if (code) {
+    const expectedState = localStorage.getItem(AUTH_STATE_KEY);
+    if (!expectedState || state !== expectedState) {
+      authStatus.textContent = "보안 검증(state) 실패. 다시 로그인하세요.";
+      return;
+    }
+    try {
+      await exchangeCodeForToken(code);
+      history.replaceState({}, "", REDIRECT_URI);
+      localStorage.removeItem(AUTH_STATE_KEY);
+      authStatus.textContent = "Spotify 로그인 성공";
+    } catch (e) {
+      authStatus.textContent = `토큰 교환 실패: ${e.message}`;
+    }
+  }
+}
+
+async function initApp() {
+  refreshAuthUI();
+  await bootstrapAuth();
+  refreshAuthUI();
+
+  if (!spotifyAuth?.access_token) {
+    renderTracks([]);
+    return;
+  }
+
+  try {
+    await fetchSeedTracks();
+    renderTracks(seedTracks);
+    statusText.textContent = "목록에서 한 곡을 누르면 Spotify 연관 30곡을 생성해 재생합니다.";
+  } catch (e) {
+    statusText.textContent = `목록 로드 실패: ${e.message}`;
+  }
+}
+
+saveClientIdBtn.addEventListener("click", () => {
+  setStoredClientId(clientIdInput.value);
+  refreshAuthUI();
+});
+
+loginBtn.addEventListener("click", () => {
+  beginSpotifyLogin();
+});
+
+logoutBtn.addEventListener("click", () => {
+  clearSpotifyAuth();
+  stopPlayback();
+  seedTracks = [];
+  currentTracks = [];
+  renderTracks([]);
+  refreshAuthUI();
+  statusText.textContent = "로그아웃되었습니다.";
+});
 
 button.addEventListener("click", handleSearch);
 input.addEventListener("keydown", (event) => {
@@ -220,6 +437,9 @@ list.addEventListener("click", (event) => {
 });
 
 audioPlayer.addEventListener("ended", () => {
+  if (!activeQueue.length) {
+    return;
+  }
   const nextIndex = queueIndex + 1;
   if (nextIndex < activeQueue.length) {
     playTrackInQueue(nextIndex);
@@ -230,4 +450,4 @@ audioPlayer.addEventListener("ended", () => {
 
 stopBtn.addEventListener("click", stopPlayback);
 
-renderTracks(seedTracks);
+initApp();
