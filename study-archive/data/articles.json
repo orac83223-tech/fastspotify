@@ -1,0 +1,74 @@
+[
+  {
+    "id": "2026-10-13-ai-generalization-sample",
+    "date": "2026-10-13",
+    "feed": "learning",
+    "category": "AI",
+    "title": "훈련 점수가 높을수록 좋은 AI일까?",
+    "summary": "초기 예시 · 과적합과 데이터 누수를 구분하고, 처음 보는 데이터로 실력을 확인하는 법을 배웁니다.",
+    "minutes": 5,
+    "sample": true,
+    "sections": [
+      {
+        "heading": "초기 예시 · 2026년 10월 13일",
+        "paragraphs": ["공개 아카이브의 구성과 읽기 흐름을 보여 주는 짧은 예시입니다. 정규 20~30분 학습 글이 아닙니다. 작성·출처 확인: 2026년 10월 13일, 한국 표준시(KST)."]
+      },
+      {
+        "heading": "외운 답과 배운 규칙 사이",
+        "paragraphs": ["스팸 메일 100개를 외운 모델을 상상해 봅시다. 같은 메일을 다시 보여 주면 모두 맞히지만, 새 메일에서는 자주 틀립니다. 훈련 자료에 지나치게 맞춰져 새로운 자료에 적용되는 규칙을 얻지 못한 상태를 과적합이라고 합니다. 모델의 목표는 이미 본 문제의 만점보다, 보지 못한 문제에서도 유지되는 성능입니다. [Google의 과적합 설명](https://developers.google.com/machine-learning/crash-course/overfitting/overfitting)"]
+      },
+      {
+        "heading": "평가를 오염시키는 작은 지름길",
+        "paragraphs": ["가상의 실험에서 모델 A는 훈련 정확도 99%, 새 자료 정확도 72%이고, B는 각각 92%, 88%라고 합시다. 동일한 새 자료로 비교했다면 B의 일반화 성능이 더 좋다는 근거가 됩니다. 다만 평가 자료를 보고 계속 모델을 고르면, 그 자료도 사실상 연습 문제가 됩니다.", "정답을 직접 보여 주지 않아도 누수는 생깁니다. 전체 자료의 평균으로 값을 표준화한 뒤 훈련·평가 자료를 나누면, 평가 자료의 정보가 준비 과정에 섞입니다. 먼저 나누고, 훈련 자료에서 구한 평균과 표준편차를 평가 자료에도 적용해야 합니다. [scikit-learn의 데이터 누수 안내](https://scikit-learn.org/stable/common_pitfalls.html#data-leakage)"]
+      },
+      {
+        "heading": "높은 점수 앞에서 던질 질문",
+        "paragraphs": ["점수를 읽을 때는 어떤 자료로 학습했고, 무엇을 기준으로 선택했으며, 마지막 평가는 무엇으로 했는지 구분해 보세요. 실제 이용 환경이 바뀌면 깨끗한 평가 자료에서도 얻었던 성능이 유지되지 않을 수 있습니다. 따라서 점수 하나만으로 실전 성능을 보장할 수는 없습니다."]
+      }
+    ],
+    "sources": [
+      {"title": "Google Machine Learning Crash Course · Overfitting", "url": "https://developers.google.com/machine-learning/crash-course/overfitting/overfitting", "detail": "과적합·일반화 및 실제 데이터 분포에 관한 공식 교육 자료. 2026-10-13 KST 확인."},
+      {"title": "scikit-learn · Common pitfalls and recommended practices", "url": "https://scikit-learn.org/stable/common_pitfalls.html#data-leakage", "detail": "평가 자료의 분리, 전처리 통계와 데이터 누수에 관한 공식 문서. 2026-10-13 KST 확인."}
+    ],
+    "questions": [
+      {"question": "훈련 정확도가 99%이면 과적합이 확실한가요?", "answer": "아니요. 훈련 점수만으로 판단할 수 없습니다. 학습과 선택에 쓰지 않은 자료의 성능을 함께 봐야 합니다."},
+      {"question": "평가 자료는 평균 계산에만 썼는데도 문제가 되나요?", "answer": "그렇습니다. 평가 자료의 정보가 전처리에 반영되므로 누수가 생길 수 있습니다. 전처리 통계는 훈련 자료에서 구합니다."}
+    ]
+  },
+  {
+    "id": "2026-10-13-insight-urban-heat-sample",
+    "date": "2026-10-13",
+    "feed": "insight",
+    "category": "도시·과학",
+    "title": "해가 진 뒤에도 도시는 왜 뜨거울까?",
+    "summary": "초기 예시 · 도시의 재료와 나무를 통해 열섬을 읽고, 온도 지도를 볼 때 놓치기 쉬운 차이를 살펴봅니다.",
+    "minutes": 5,
+    "sample": true,
+    "sections": [
+      {
+        "heading": "초기 예시 · 2026년 10월 13일",
+        "paragraphs": ["공개 아카이브의 구성과 읽기 흐름을 보여 주는 짧은 예시입니다. 정규 20~30분 학습 글이 아닙니다. 작성·출처 확인: 2026년 10월 13일, 한국 표준시(KST)."]
+      },
+      {
+        "heading": "도시가 저장한 낮의 열",
+        "paragraphs": ["같은 여름 저녁, 공원 옆길과 넓은 주차장은 다른 공간처럼 느껴집니다. 도시의 포장과 건물은 낮에 받은 열을 저장했다가 천천히 내보냅니다. 녹지가 적으면 그늘과 수분을 통한 냉각도 줄어듭니다. 주변보다 도심이 더 따뜻해지는 열섬은 해가 진 뒤에도 이어질 수 있습니다. 건물의 배치와 바람, 차량과 냉방기의 폐열도 영향을 줍니다. [미국 환경보호청의 열섬 설명](https://www.epa.gov/heatislands/what-are-heat-islands)"]
+      },
+      {
+        "heading": "나무는 그늘 이상의 일을 한다",
+        "paragraphs": ["나무는 햇빛을 가리고, 잎을 통해 수분을 내보내며 주변을 식힙니다. NASA가 소개한 연구는 위성 자료로 세계 500개 대도시의 녹지와 지표면 온도를 비교했습니다. 여기서 얻을 관점은 녹지의 총면적뿐 아니라, 더운 구역에 녹지가 어떻게 놓여 있는지 살피는 것입니다. [NASA의 녹지와 도시 냉각 해설](https://science.nasa.gov/missions/landsat/landsat-reveals-role-of-green-spaces-in-cooling-cities/)", "예를 들어 같은 예산으로 큰 공원 하나를 만들거나 여러 정류장 주변에 나무를 심을 수 있다고 합시다. 어느 선택이 더 나은지는 쉬는 공간이 필요한지, 이동 중 그늘이 필요한지에 따라 달라집니다. 이 비교는 연구의 직접 결론이 아니라, 열섬의 원리를 도시 설계에 적용해 보는 사고 실험입니다."]
+      },
+      {
+        "heading": "온도 지도에서 확인할 것",
+        "paragraphs": ["위성이 보는 지표면 온도와 사람이 호흡하는 높이의 공기 온도는 같은 값이 아닙니다. 붉은 지도가 무엇을 측정했는지 먼저 확인해야 합니다. 녹지의 냉각 효과도 기후와 도시 환경에 따라 달라지므로, 다른 도시의 수치를 그대로 가져와 효과를 약속하기는 어렵습니다. 온도 지도를 읽는 일은 측정 대상과 장소의 조건을 함께 읽는 일입니다."]
+      }
+    ],
+    "sources": [
+      {"title": "미국 환경보호청(EPA) · What Are Heat Islands?", "url": "https://www.epa.gov/heatislands/what-are-heat-islands", "detail": "열 저장·방출, 증산·그늘, 도시 구조와 지표면·대기 열섬의 차이에 관한 공식 자료. 2026-10-13 KST 확인."},
+      {"title": "NASA · Landsat Reveals Role of Green Spaces in Cooling Cities", "url": "https://science.nasa.gov/missions/landsat/landsat-reveals-role-of-green-spaces-in-cooling-cities/", "detail": "Landsat 자료를 활용한 500개 도시 연구와 기후·도시 환경에 따른 녹지 설계 차이를 설명한 공식 해설. 2026-10-13 KST 확인."}
+    ],
+    "questions": [
+      {"question": "해가 지면 열섬도 바로 사라지나요?", "answer": "아니요. 도시의 재료가 저장한 열을 천천히 방출하므로 밤에도 주변보다 따뜻할 수 있습니다."},
+      {"question": "위성 지도에서 45℃인 도로는 그 위 공기도 45℃라는 뜻인가요?", "answer": "아니요. 지표면 온도와 공기 온도는 서로 다른 측정값입니다. 측정 대상과 조건을 확인해야 합니다."}
+    ]
+  }
+]
