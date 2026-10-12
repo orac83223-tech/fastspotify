@@ -44,7 +44,7 @@ def validate(articles):
   assert not re.search(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',json.dumps(a,ensure_ascii=False),re.I),'Email addresses may not be published'
 def build():
  articles=json.loads((ROOT/'data/articles.json').read_text());validate(articles)
- articles.sort(key=lambda a:(a['date'],a['feed']),reverse=True)
+ articles.sort(key=lambda a:(a['date'],not a.get('sample',False),a['feed']),reverse=True)
  latest=[next((a for a in articles if a['feed']==f),None) for f in FEEDS];latest=[a for a in latest if a]
  options=''.join('<option>'+esc(c)+'</option>' for c in sorted(set(a['category'] for a in articles)))
  notice='지금은 사이트 구성을 보여 주는 짧은 초기 예시 2편을 담았습니다. 정규 글은 발행되는 대로 이곳에 쌓입니다.' if all(a.get('sample') for a in articles) else '자료의 근거와 해설을 함께 읽고, 마음에 남는 글은 저장해 두세요.'
