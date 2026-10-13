@@ -7,12 +7,47 @@ ROOT=Path(__file__).resolve().parent
 FEEDS={'learning':'CS·AI·금융공학','insight':'관심사 인사이트'}
 def esc(x):return html.escape(str(x),quote=True)
 def rich(s):
- # Only Markdown HTTPS links are supported. All raw HTML is escaped.
+ # Escape every text node; historical Markdown uses only these safe inline forms.
+ pattern=r'\[([^\]]+)\]\((https://[^\s)]+)\)|`([^`\n]+)`|\*\*([^*]+)\*\*'
  out=[];start=0
- for m in re.finditer(r'\[([^\]]+)\]\((https://[^\s)]+)\)',s):
-  out.append(esc(s[start:m.start()]));out.append('<a href="'+esc(m[2])+'" target="_blank" rel="noopener noreferrer">'+esc(m[1])+'</a>');start=m.end()
- out.append(esc(s[start:]));return ''.join(out)
-def paragraphs(s):return ''.join('<p>'+rich(p)+'</p>' for p in s)
+ for m in re.finditer(pattern,s):
+  out.append(esc(s[start:m.start()]))
+  if m[1] is not None:out.append('<a href="'+esc(m[2])+'" target="_blank" rel="noopener noreferrer">'+esc(m[1])+'</a>')
+  elif m[3] is not None:out.append('<code>'+esc(m[3])+'</code>')
+  else:out.append('<strong>'+rich(m[4])+'</strong>')
+  start=m.end()
+ out.append(esc(s[start:]));return ''.join(out).replace('\n','<br>')
+def paragraphs(items):
+ # Retain original wording and notation, including code and multiline equations.
+ lines='\n\n'.join(items).splitlines();out=[];i=0
+ while i<len(lines):
+  line=lines[i].strip()
+  if not line or re.fullmatch(r'[-*_]{3,}',line):i+=1;continue
+  if line.startswith('```'):
+   block=[];i+=1
+   while i<len(lines) and not lines[i].strip().startswith('```'):block.append(lines[i]);i+=1
+   out.append('<pre><code>'+esc('\n'.join(block))+'</code></pre>');i+=1;continue
+  if line=='\\[':
+   block=[];i+=1
+   while i<len(lines) and lines[i].strip()!='\\]':block.append(lines[i]);i+=1
+   out.append('<pre class="math-expression" aria-label="원문의 수식 표기">'+esc('\n'.join(block))+'</pre>');i+=1;continue
+  if line.startswith('|') and i+1<len(lines) and re.fullmatch(r'[|:\-\s]+',lines[i+1]):
+   rows=[]
+   while i<len(lines) and lines[i].strip().startswith('|'):
+    row=lines[i].strip();i+=1
+    if re.fullmatch(r'[|:\-\s]+',row):continue
+    rows.append([cell.strip() for cell in row.strip('|').split('|')])
+   out.append('<div class="table-scroll"><table><thead><tr>'+''.join('<th>'+rich(c)+'</th>' for c in rows[0])+'</tr></thead><tbody>'+''.join('<tr>'+''.join('<td>'+rich(c)+'</td>' for c in row)+'</tr>' for row in rows[1:])+'</tbody></table></div>');continue
+  heading=re.match(r'^#{1,6}\s+(.+)',line)
+  if heading:out.append('<h3>'+rich(heading[1])+'</h3>');i+=1;continue
+  block=[]
+  while i<len(lines) and lines[i].strip():
+   if block and (lines[i].strip().startswith('```') or lines[i].strip()=='\\[' or re.match(r'^#{1,6}\s',lines[i])):break
+   block.append(lines[i]);i+=1
+  if all(re.match(r'^\s*[-*+]\s+',x) for x in block):out.append('<ul>'+''.join('<li>'+rich(re.sub(r'^\s*[-*+]\s+','',x))+'</li>' for x in block)+'</ul>')
+  elif all(re.match(r'^\s*>\s?',x) for x in block):out.append('<blockquote>'+rich('\n'.join(re.sub(r'^\s*>\s?','',x) for x in block))+'</blockquote>')
+  else:out.append('<p>'+rich('\n'.join(block))+'</p>')
+ return ''.join(out)
 def badge(a):return '<span class="pill">초기 예시</span>' if a.get('sample') else '<span class="pill">읽을거리</span>'
 def mark():return '<svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M3 4h9c2 0 3 1 3 3v17c-1-2-3-3-6-3H3V4Zm22 0h-7v17h7V4Z" fill="currentColor"/></svg>'
 def head(title,prefix=''):
@@ -41,7 +76,7 @@ def validate(articles):
   assert isinstance(a['minutes'],int) and 1<=a['minutes']<=90
   assert a['sources'] and a['sections']
   for s in a['sources']:assert urlparse(s['url']).scheme=='https'
-  assert not re.search(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',json.dumps(a,ensure_ascii=False),re.I),'Email addresses may not be published'
+  assert not re.search(r'\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b',json.dumps(a,ensure_ascii=False).replace('user@example.com','example-address'),re.I),'Email addresses may not be published'
 def build():
  articles=json.loads((ROOT/'data/articles.json').read_text());validate(articles)
  articles.sort(key=lambda a:(a['date'],not a.get('sample',False),a['feed']),reverse=True)
@@ -53,10 +88,19 @@ def build():
  (ROOT/'articles').mkdir(exist_ok=True)
  for a in articles:
   sections=''.join('<section><p class="chapter">'+str(i+1).zfill(2)+'</p><h2>'+esc(s['heading'])+'</h2>'+paragraphs(s['paragraphs'])+'</section>' for i,s in enumerate(a['sections']))
-  questions=''.join('<details><summary><span>Q'+str(i+1)+'.</span> '+esc(q['question'])+'<small>해설 보기 +</small></summary><p>'+rich(q['answer'])+'</p></details>' for i,q in enumerate(a.get('questions',[])))
+  questions=''
+  for i,q in enumerate(a.get('questions',[])):
+   if '\n' in q['question'] or len(q['question'])>240:
+    questions+='<div class="question-item"><h3>Q'+str(i+1)+'.</h3>'+paragraphs([q['question']])+'<details><summary>해설 보기 +</summary>'+paragraphs([q['answer']])+'</details></div>'
+   else:questions+='<details><summary><span>Q'+str(i+1)+'.</span> '+esc(q['question'])+'<small>해설 보기 +</small></summary>'+paragraphs([q['answer']])+'</details>'
   sources=''.join('<li><a href="'+esc(s['url'])+'" target="_blank" rel="noopener noreferrer">'+esc(s['title'])+' ↗</a><p>'+esc(s['detail'])+'</p></li>' for s in a['sources'])
+  archived=any(s['heading']=='아카이브 수록 안내' for s in a['sections'])
+  source_heading='원고에 포함된 자료' if archived else '확인한 원자료'
+  source_note='원고에 기재된 출처를 보존했습니다. 아카이브 수록일에 자료를 다시 검증했다는 뜻은 아닙니다.' if archived else '원문 확인일: '+a['date']+' (한국시간)'
   sample='<aside class="sample-notice">사이트 개설을 위한 짧은 예시 글입니다. 정규 학습 회차나 과거 발행분이 아닙니다.</aside>' if a.get('sample') else ''
-  page=f'''{head(a['title'],'../')}{header(True)}<div class="reading-progress" id="reading-progress"></div><main class="reading-main" id="content" data-article-id="{a['id']}"><div class="reading-tools"><button id="article-save" aria-pressed="false">☆ 글 저장</button><button id="font-size" aria-pressed="false">가 +</button><button id="print">인쇄</button></div><div class="article-eyebrow">{FEEDS[a['feed']]} <span> / </span> {esc(a['category'])}</div><h1>{esc(a['title'])}</h1><p class="reading-summary">{esc(a['summary'])}</p><div class="reading-meta"><time datetime="{a['date']}">{a['date'].replace('-','.')}</time><span>·</span><span>{a['minutes']}분 읽기</span>{badge(a)}</div>{sample}<div class="article-body">{sections}<section class="question-section"><p class="eyebrow">PAUSE & REFLECT</p><h2>잠깐, 내 언어로 설명해 보기</h2>{questions}</section><section class="sources"><p class="eyebrow">READ FURTHER</p><h2>확인한 원자료</h2><p class="source-date">원문 확인일: {a['date']} (한국시간)</p><ol>{sources}</ol></section></div><div class="back-bottom"><a href="../index.html#archive">← 다른 읽을거리 살펴보기</a><span>조금씩, 오래.</span></div></main>{foot('../')}<script src="../reading.js" defer></script></body></html>'''
+  question_section='<section class="question-section"><p class="eyebrow">PAUSE & REFLECT</p><h2>잠깐, 내 언어로 설명해 보기</h2>'+questions+'</section>' if questions else ''
+  page=f'''{head(a['title'],'../')}{header(True)}<div class="reading-progress" id="reading-progress"></div><main class="reading-main" id="content" data-article-id="{a['id']}"><div class="reading-tools"><button id="article-save" aria-pressed="false">☆ 글 저장</button><button id="font-size" aria-pressed="false">가 +</button><button id="print">인쇄</button></div><div class="article-eyebrow">{FEEDS[a['feed']]} <span> / </span> {esc(a['category'])}</div><h1>{esc(a['title'])}</h1><p class="reading-summary">{esc(a['summary'])}</p><div class="reading-meta"><time datetime="{a['date']}">{a['date'].replace('-','.')}</time><span>·</span><span>{a['minutes']}분 읽기</span>{badge(a)}</div>{sample}<div class="article-body">{sections}{question_section}<section class="sources"><p class="eyebrow">READ FURTHER</p><h2>{source_heading}</h2><p class="source-date">{esc(source_note)}</p><ol>{sources}</ol></section></div><div class="back-bottom"><a href="../index.html#archive">← 다른 읽을거리 살펴보기</a><span>조금씩, 오래.</span></div></main>{foot('../')}<script src="../reading.js" defer></script></body></html>'''
   (ROOT/'articles'/f"{a['id']}.html").write_text(page)
  print(f'Built {len(articles)} articles and archive.')
 if __name__=='__main__':build()
+

@@ -1,0 +1,210 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="CS·AI·금융공학과 관심사 인사이트. 배움이 쌓이는 공개 아카이브."><meta name="robots" content="noindex, nofollow"><title>FlashAttention-4와 병목 이동: Tensor Core가 빨라졌는데 왜 softmax의 `exp`가 새 병목이 되는가 | 매일의 발견</title><link rel="icon" href="../favicon.svg"><link rel="stylesheet" href="../style.css"></head><body><a class="skip" href="#content">본문으로 이동</a><header class="site-header"><a href="../index.html" class="brand"><svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M3 4h9c2 0 3 1 3 3v17c-1-2-3-3-6-3H3V4Zm22 0h-7v17h7V4Z" fill="currentColor"/></svg><span>매일의 발견</span></a><nav aria-label="메뉴"><a href="../index.html#archive">아카이브</a></nav></header><div class="reading-progress" id="reading-progress"></div><main class="reading-main" id="content" data-article-id="2026-10-04-learning"><div class="reading-tools"><button id="article-save" aria-pressed="false">☆ 글 저장</button><button id="font-size" aria-pressed="false">가 +</button><button id="print">인쇄</button></div><div class="article-eyebrow">CS·AI·금융공학 <span> / </span> AI</div><h1>FlashAttention-4와 병목 이동: Tensor Core가 빨라졌는데 왜 softmax의 `exp`가 새 병목이 되는가</h1><p class="reading-summary">Transformer attention의 수학식은 그대로인데, 왜 A100 시대에는 HBM 왕복을 줄이는 것이 중요했고, H100에서는 비동기 파이프라이닝이 중요했으며, B200에서는 softmax의 exponential unit과 shared-memory traffic이 새 병목으로 떠올랐을까?</p><div class="reading-meta"><time datetime="2026-10-04">2026.10.04</time><span>·</span><span>25분 읽기</span><span class="pill">읽을거리</span></div><div class="article-body"><section><p class="chapter">01</p><h2>아카이브 수록 안내</h2><p>원고 표기일: 2026-10-04 · 아카이브 게시일: 2026-10-13 (한국시간).</p><p>2026-10-04 · 27회차 · AI</p><p>과거 원고의 본문·수식·문제·출처를 보존했습니다. 본문 속 오늘·최신·확인일은 당시 원고의 표현이며, 이번 수록에서 내용과 출처를 새로 검증했다는 뜻은 아닙니다. 개인정보와 발송 상태 등 비공개 안내는 제외했습니다.</p></section><section><p class="chapter">02</p><h2>핵심 질문과 결론</h2><p><strong>핵심 질문:</strong> Transformer attention의 수학식은 그대로인데, 왜 A100 시대에는 HBM 왕복을 줄이는 것이 중요했고, H100에서는 비동기 파이프라이닝이 중요했으며, B200에서는 softmax의 exponential unit과 shared-memory traffic이 새 병목으로 떠올랐을까? 또 FLOPs가 줄지 않거나 일부 재계산이 늘어도 실제 wall-clock은 왜 더 빨라질 수 있을까?</p><p><strong>결론:</strong> FlashAttention 계열의 핵심은 attention을 근사하는 것이 아니라 <strong>같은 attention을 GPU의 메모리 계층과 실행 유닛에 맞게 다른 순서로 계산하는 것</strong>이다. 2022년 FlashAttention은 \(N\times N\) attention matrix를 HBM에 materialize하지 않고 tile 단위로 처리해 I/O를 줄였다. 2026년 FlashAttention-4(FA4)는 Blackwell B200에서 Tensor Core 처리량은 크게 증가했지만 exponential unit과 shared-memory bandwidth는 같은 속도로 늘지 않았다는 <strong>비대칭 하드웨어 스케일링</strong>을 직접 겨냥한다. FA4는 matmul과 softmax를 겹쳐 실행하고, exp 일부를 FMA 기반 다항식으로 옮기며, Tensor Memory와 2-CTA MMA를 활용해 shared-memory traffic을 줄인다. 논문은 B200 BF16에서 최대 1613 TFLOPs/s, theoretical peak의 약 71%, cuDNN 9.13 대비 최대 1.3배, Triton 대비 최대 2.7배를 보고한다. 다만 저자들은 논문 이후 더 최신 cuDNN이 여러 기법을 흡수해 FA4와 비슷한 성능을 내기 시작했다고 함께 적었다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>오늘의 중심 원자료는 Ted Zadouri, Markus Hoehnerbach, Jay Shah, Timmy Liu, Vijay Thakkar, Tri Dao의 <strong>“FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling”</strong>이다. arXiv 최초 공개는 <strong>2026-03-05</strong>, MLSys 2026 발표작이다. 오늘 <strong>2026-10-04 KST</strong>에 원문 PDF의 attention 수식, Blackwell 하드웨어 특성, forward/backward roofline 분석, exp 근사, online-softmax rescaling, benchmark 부분을 직접 확인했다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p><a href="https://arxiv.org/abs/2603.05451?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">중심 원자료 — FlashAttention-4 arXiv</a>  <br><a href="https://proceedings.mlsys.org/paper_files/paper/2026/hash/ae8b0b5838ba510daff1198474e7b984-Abstract-Conference.html?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">MLSys 2026 공식 페이지</a></p></section><section><p class="chapter">03</p><h2>1. Attention 수식을 먼저 복습하자</h2><p>한 attention head에서</p><pre class="math-expression" aria-label="원문의 수식 표기">Q,K,V\in\mathbb{R}^{N\times d}</pre><p>라 하자. \(N\)은 sequence length, \(d\)는 head dimension이다.</p><p>Score matrix는</p><pre class="math-expression" aria-label="원문의 수식 표기">S=\alpha QK^\top,
+\qquad
+\alpha=\frac1{\sqrt d}</pre><p>이고,</p><pre class="math-expression" aria-label="원문의 수식 표기">P=\operatorname{softmax}(S),</pre><p>최종 출력은</p><pre class="math-expression" aria-label="원문의 수식 표기">O=PV</pre><p>다. 즉 forward attention은 크게</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+QK^\top
+\rightarrow
+\operatorname{softmax}
+\rightarrow
+PV
+}</pre><p>라는 <strong>큰 행렬곱 두 번과 가운데 softmax</strong>다. FA4 원문도 바로 이 수식에서 출발한다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>표준 attention 구현은 \(S\)와 \(P\)를 \(N\times N\) 형태로 HBM에 써놓고 다시 읽기 때문에 중간 메모리와 I/O가 크게 늘어난다. 원래 FlashAttention 논문은 이 \(N^2\) intermediate materialization을 피하는 것이 핵심이라고 설명한다. <a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>여기서 첫 번째로 구분해야 할 것이 있다.</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+O(N^2)\text{ 연산량}
+\neq
+O(N^2)\text{ 중간 메모리를 반드시 저장해야 함}
+}</pre><p>이다.</p><p>FlashAttention은 모든 Query-Key pair 계산 자체를 없애지 않는다. 대신 그 결과를 <strong>느린 HBM에 전부 저장하지 않는다.</strong></p></section><section><p class="chapter">04</p><h2>2. 4K context만 되어도 중간행렬은 꽤 크다</h2><p>예를 들어</p><pre class="math-expression" aria-label="원문의 수식 표기">N=4096</pre><p>이면</p><pre class="math-expression" aria-label="원문의 수식 표기">N^2=16{,}777{,}216.</pre><p>BF16 한 원소가 2 byte라고 하면 \(N\times N\) 행렬 하나만 해도</p><pre class="math-expression" aria-label="원문의 수식 표기">16{,}777{,}216\times2
+=
+33{,}554{,}432\text{ bytes}</pre><p>즉 약</p><pre class="math-expression" aria-label="원문의 수식 표기">32\text{ MiB}</pre><p>다.</p><p>그런데 이것은 head 하나, \(S\) 하나만 계산한 수치다. 여러 head, batch, \(P\), backward를 위해 저장해야 하는 intermediate까지 생각하면 traffic은 훨씬 커진다.</p><p>그래서 FlashAttention의 중요한 질문은</p><blockquote>FLOPs를 얼마나 줄일 수 있는가?</blockquote><p>보다 먼저</p><blockquote><strong>같은 FLOPs를 하더라도 HBM과 on-chip memory 사이에 데이터를 몇 번 옮겨야 하는가?</strong></blockquote><p>였다.</p><p>2022년 FlashAttention 논문은 이 관점을 <strong>IO-awareness</strong>라고 불렀고, tile과 recomputation을 써서 HBM 왕복을 줄였다. 일부 FLOPs가 늘어나도 HBM access가 크게 줄면 실제 runtime은 더 빨라질 수 있다고 보고했다. <a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>이는 9월 8일 배운 Roofline 모델과 정확히 연결된다.</p></section><section><p class="chapter">05</p><h2>3. 그런데 softmax는 전체 행을 보지 않고 어떻게 계산할까</h2><p>Softmax 한 행의 score를</p><pre class="math-expression" aria-label="원문의 수식 표기">s_1,\dots,s_N</pre><p>이라 하자.</p><p>수치적으로 안정한 softmax는</p><pre class="math-expression" aria-label="원문의 수식 표기">p_i=
+\frac{e^{s_i-m}}
+{\sum_j e^{s_j-m}},
+\qquad
+m=\max_j s_j</pre><p>로 계산한다.</p><p>문제는 전체 행을 보기 전에는 \(m\)도 denominator도 모른다는 것이다.</p><p>그런데 FlashAttention은 이걸 <strong>online softmax</strong>로 해결한다.</p><p>지금까지 본 block의 통계를</p><pre class="math-expression" aria-label="원문의 수식 표기">m_{\text{old}}</pre><p>= running maximum,</p><pre class="math-expression" aria-label="원문의 수식 표기">\ell_{\text{old}}</pre><p>= running exponential sum,</p><pre class="math-expression" aria-label="원문의 수식 표기">o_{\text{old}}</pre><p>= 아직 최종 normalize하지 않은 weighted-value numerator라고 하자.</p><p>새 block의 score를 \(s_{\text{new}}\), value를 \(V_{\text{new}}\)라 하면</p><pre class="math-expression" aria-label="원문의 수식 표기">m_{\text{new}}
+=
+\max
+\left(
+m_{\text{old}},
+\max(s_{\text{new}})
+\right)</pre><p>이고</p><pre class="math-expression" aria-label="원문의 수식 표기">\ell_{\text{new}}
+=
+e^{m_{\text{old}}-m_{\text{new}}}
+\ell_{\text{old}}
++
+\sum
+e^{s_{\text{new}}-m_{\text{new}}}.</pre><p>또</p><pre class="math-expression" aria-label="원문의 수식 표기">o_{\text{new}}
+=
+e^{m_{\text{old}}-m_{\text{new}}}
+o_{\text{old}}
++
+\sum
+e^{s_{\text{new}}-m_{\text{new}}}V_{\text{new}}.</pre><p>모든 block을 끝내면</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+O=
+\frac{o_{\text{final}}}
+{\ell_{\text{final}}}
+}</pre><p>이다.</p><p>FA4도 이 running max와 running normalizer 구조를 사용하며, 원문 §3.1.4가 이 식을 명시한다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p></section><section><p class="chapter">06</p><h2>4. 손계산: 두 block으로 나눠도 결과가 똑같다</h2><p><strong>[교육용 예제]</strong></p><p>Score와 scalar value가</p><pre class="math-expression" aria-label="원문의 수식 표기">s=[1,2,3,0]</pre><pre class="math-expression" aria-label="원문의 수식 표기">v=[10,20,30,40]</pre><p>라고 하자.</p><p>전체 max는</p><pre class="math-expression" aria-label="원문의 수식 표기">m=3</pre><p>이다.</p><p>따라서 stable exponential은</p><pre class="math-expression" aria-label="원문의 수식 표기">[e^{-2},e^{-1},1,e^{-3}]</pre><p>즉 약</p><pre class="math-expression" aria-label="원문의 수식 표기">[0.1353,0.3679,1,0.0498]</pre><p>이다.</p><p>분모는</p><pre class="math-expression" aria-label="원문의 수식 표기">\ell
+=
+0.1353+0.3679+1+0.0498
+\approx1.5530.</pre><p>분자는</p><pre class="math-expression" aria-label="원문의 수식 표기">o
+=
+0.1353(10)
++
+0.3679(20)
++
+1(30)
++
+0.0498(40)</pre><pre class="math-expression" aria-label="원문의 수식 표기">\approx40.7024.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">O
+\approx
+\frac{40.7024}{1.5530}
+=
+26.2089.</pre><p>이제 score를</p><pre class="math-expression" aria-label="원문의 수식 표기">[1,2]</pre><p>와</p><pre class="math-expression" aria-label="원문의 수식 표기">[3,0]</pre><p>두 block으로 나누자.</p><p>첫 block에서</p><pre class="math-expression" aria-label="원문의 수식 표기">m_1=2</pre><pre class="math-expression" aria-label="원문의 수식 표기">\ell_1=e^{-1}+1
+\approx1.3679</pre><pre class="math-expression" aria-label="원문의 수식 표기">o_1=e^{-1}(10)+20
+\approx23.6788.</pre><p>두 번째 block의 최대값은 3이므로</p><pre class="math-expression" aria-label="원문의 수식 표기">m_2=3.</pre><p>이전 결과를 새 max 기준으로 바꾸는 rescaling factor는</p><pre class="math-expression" aria-label="원문의 수식 표기">e^{2-3}=e^{-1}\approx0.3679.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\ell_2
+=
+0.3679(1.3679)+1+e^{-3}
+\approx1.5530</pre><p>이고</p><pre class="math-expression" aria-label="원문의 수식 표기">o_2
+=
+0.3679(23.6788)
++
+30
++
+e^{-3}(40)
+\approx40.7024.</pre><p>결국</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{o_2}{\ell_2}
+\approx26.2089</pre><p>다.</p><p>전체를 한 번에 계산한 결과와 같다.</p><p>이 덕분에 FlashAttention은 \(N\times N\)의 \(P\) 전체를 HBM에 저장하지 않고도 attention을 계산할 수 있다.</p></section><section><p class="chapter">07</p><h2>5. 그럼 2022 FlashAttention으로 문제가 끝난 것 아닌가</h2><p>아니다.</p><p>GPU 자체가 변한다.</p><p>FA4 논문이 보여주는 중요한 변화는 <strong>하드웨어 각 부품의 성장률이 다르다</strong>는 점이다.</p><p>논문이 제시하는 B200의 SM당 대표 throughput은</p><pre class="math-expression" aria-label="원문의 수식 표기">8192</pre><p>BF16 Tensor-Core ops/cycle/SM,</p><pre class="math-expression" aria-label="원문의 수식 표기">16</pre><p>exponential ops/cycle/SM,</p><p>shared-memory read가</p><pre class="math-expression" aria-label="원문의 수식 표기">128\text{ bytes/cycle/SM}</pre><p>이다. 또한 저자들은 H100에서 B200으로 가면서 FP16/BF16 Tensor Core peak가 GPU 기준 약 1 PFLOPS에서 2.25 PFLOPS로 커졌지만, exponential unit과 shared-memory bandwidth는 같은 비율로 증가하지 않았다고 분석한다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>이것이</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{asymmetric hardware scaling}
+}</pre><p>이다.</p></section><section><p class="chapter">08</p><h2>6. GPU를 “하나의 계산기”로 보면 이 현상을 이해할 수 없다</h2><p>GPU 내부에는 서로 다른 자원이 있다.</p><p>Tensor Core는 matrix multiply를 한다.</p><p>MUFU는 exponential 같은 특수함수를 처리한다.</p><p>Shared memory는 on-chip data movement를 담당한다.</p><p>FMA/ALU는 일반 arithmetic을 수행한다.</p><p>HBM은 대용량 데이터를 공급한다.</p><p>따라서</p><blockquote>GPU가 2배 빨라졌다</blockquote><p>라는 문장은 실제로는 정보가 부족하다.</p><p>무엇이 2배 빨라졌는가?</p><p>Tensor Core인가?</p><p>HBM인가?</p><p>Shared Memory인가?</p><p>SFU인가?</p><p>Interconnect인가?</p><p>이 비율이 workload의 병목을 결정한다.</p></section><section><p class="chapter">09</p><h2>7. 논문의 Roofline 계산을 직접 해보자</h2><p>FA4는 forward tile의 Query 길이를 \(M\), Key 길이를 \(N\), head dimension을 \(d\)라 둔다.</p><p>Forward에는 두 MMA가 있다.</p><pre class="math-expression" aria-label="원문의 수식 표기">QK^\top</pre><p>과</p><pre class="math-expression" aria-label="원문의 수식 표기">PV.</pre><p>두 행렬곱의 총 연산량은</p><pre class="math-expression" aria-label="원문의 수식 표기">4MNd</pre><p>이므로 B200 Tensor Core throughput을 적용하면 논문의 단순화된 계산시간은</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+T_{\text{MMA}}
+=
+\frac{4MNd}{8192}
+}</pre><p>cycles다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>Shared-memory read 시간은 \(M,N,d\)가 128의 배수라는 단순화에서</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+T_{\text{SMEM}}
+=
+\frac{3MNd}{8192}
+}</pre><p>이고,</p><p>softmax exponential은 \(MN\)개이므로</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+T_{\exp}
+=
+\frac{MN}{16}
+}</pre><p>이다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>이제</p><pre class="math-expression" aria-label="원문의 수식 표기">M=N=d=128</pre><p>을 넣자.</p><pre class="math-expression" aria-label="원문의 수식 표기">128^3
+=
+2{,}097{,}152.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">T_{\text{MMA}}
+=
+\frac{4(2{,}097{,}152)}{8192}
+=
+1024.</pre><pre class="math-expression" aria-label="원문의 수식 표기">T_{\text{SMEM}}
+=
+\frac{3(2{,}097{,}152)}{8192}
+=
+768.</pre><pre class="math-expression" aria-label="원문의 수식 표기">T_{\exp}
+=
+\frac{128^2}{16}
+=
+1024.</pre><p>즉</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+T_{\text{MMA}}=1024
+}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+T_{\exp}=1024
+}</pre><pre class="math-expression" aria-label="원문의 수식 표기">T_{\text{SMEM}}=768</pre><p>이다.</p><p>FA4 논문의 Table 1도 같은 값을 제시하며, MMA와 exponential unit이 forward의 주된 병목이라고 분석한다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p></section><section><p class="chapter">10</p><h2>8. Tensor Core만 두 배 빠르게 하면 어떻게 될까</h2><p>아주 단순한 <strong>교육용 모델</strong>로 세 작업이 완전히 순차 실행된다고 하자.</p><p>현재 총시간은</p><pre class="math-expression" aria-label="원문의 수식 표기">1024+768+1024
+=
+2816.</pre><p>Tensor Core를 두 배 빠르게 해서</p><pre class="math-expression" aria-label="원문의 수식 표기">T_{\text{MMA}}=512</pre><p>로 만들더라도</p><pre class="math-expression" aria-label="원문의 수식 표기">512+768+1024
+=
+2304.</pre><p>Speedup은</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{2816}{2304}
+\approx1.22.</pre><p>Tensor Core가 두 배 빨라졌는데 전체는 약 1.22배밖에 빨라지지 않는다.</p><p>실제 FA4 kernel은 이처럼 단순히 합산되지 않고 여러 resource를 overlap하므로 이 숫자를 실측예측으로 쓰면 안 된다.</p><p>하지만 구조는 Amdahl의 법칙과 같다.</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{이미 빠른 부품을 더 빠르게 해도
+전체 시스템의 병목이 다른 곳이면 효과가 작다.}
+}</pre></section><section><p class="chapter">11</p><h2>9. 그래서 FA4는 “줄일 수 없으면 겹친다”</h2><p>FA4의 첫 번째 핵심은 pipeline overlap이다.</p><p>두 Query tile을 번갈아 처리하면서 개념적으로</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{Tile A: MMA}</pre><p>하는 동안</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{Tile B: softmax}</pre><p>를 진행한다.</p><p>그 다음에는 역할이 바뀐다.</p><p>B200은 MMA가 fully asynchronous이고 결과를 TMEM에 쓸 수 있기 때문에 이런 overlap을 더 공격적으로 만들 수 있다. FA4는 Tensor Core, softmax warpgroup, data movement를 서로 다른 역할에 배치한다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>공장으로 비유하면 단순하다.</p><p>절단기 작업이 끝날 때까지 포장기를 세워놓는 대신</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{제품 A 절단}
+\parallel
+\text{제품 B 포장}</pre><p>을 한다.</p><p>전체 작업량을 줄이지 않아도 idle time을 줄이면 throughput은 올라간다.</p></section><section><p class="chapter">12</p><h2>10. Tensor Memory는 단순히 “메모리가 조금 더 생긴 것”이 아니다</h2><p>Blackwell은 SM마다</p><pre class="math-expression" aria-label="원문의 수식 표기">256\text{ KB}</pre><p>Tensor Memory(TMEM)를 도입했다.</p><p>FA4 원문에 따르면 TMEM은 Tensor Core intermediate 저장용 on-chip memory이고, MMA 결과를 register 대신 TMEM으로 비동기적으로 쓸 수 있다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>이게 중요한 이유는 register pressure 때문이다.</p><p>더 큰 tile을 사용하면 동시에 살아 있어야 하는 intermediate도 커진다.</p><p>Register가 부족해 spill이 나면 fast path가 다시 느린 memory path로 내려간다.</p><p>TMEM이 있으면</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{더 큰 tile}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{더 깊은 pipeline}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{낮은 register pressure}</pre><p>를 함께 노릴 수 있다.</p><p>즉 새로운 memory level은 capacity만 바꾸는 것이 아니라 <strong>가능한 scheduling algorithm 자체를 바꾼다.</strong></p></section><section><p class="chapter">13</p><h2>11. `exp` 유닛이 혼잡하면 일반 FMA를 빌려 쓴다</h2><p>Softmax에는 exponential이 필요하다.</p><p>B200/GB200에서 논문이 제시한 MUFU 처리량은</p><pre class="math-expression" aria-label="원문의 수식 표기">16\text{ ops/cycle/SM}</pre><p>인데 Tensor Core는</p><pre class="math-expression" aria-label="원문의 수식 표기">8192\text{ ops/cycle/SM}</pre><p>이다. 물론 두 연산의 의미가 다르므로 숫자를 단순비교할 수는 없지만, attention tile에서는 exp 시간이 MMA와 동급의 병목이 된다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>FA4는 그래서 exp 일부를 FMA로 옮긴다.</p><pre class="math-expression" aria-label="원문의 수식 표기">2^x
+=
+2^{\lfloor x\rfloor}
+2^{x-\lfloor x\rfloor}.</pre><p>정수부분</p><pre class="math-expression" aria-label="원문의 수식 표기">2^{\lfloor x\rfloor}</pre><p>은 IEEE-754 exponent bit를 이용해 빠르게 만들고,</p><p>fractional part</p><pre class="math-expression" aria-label="원문의 수식 표기">f=x-\lfloor x\rfloor\in[0,1)</pre><p>에 대해서는</p><pre class="math-expression" aria-label="원문의 수식 표기">2^f
+\approx
+p_0+p_1f+p_2f^2+p_3f^3+\cdots</pre><p>처럼 polynomial approximation을 사용한다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>핵심은 <strong>전부 바꾸지 않는다는 것</strong>이다.</p><p>논문은 tile 설정에 따라 exp의 약</p><pre class="math-expression" aria-label="원문의 수식 표기">10\%-25\%</pre><p>만 software-emulated path로 보내고 나머지는 MUFU를 사용한다. 전부 FMA로 보내면 register pressure와 latency가 오히려 문제가 될 수 있기 때문이다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>이는 전형적인 load balancing이다.</p><p>혼잡한 전문창구의 손님 일부를 남는 일반창구로 보내는 것이다.</p></section><section><p class="chapter">14</p><h2>12. 근사 exp를 쓰면 이제 “exact attention”이 아닌가</h2><p>여기서는 exact라는 말을 조심해야 한다.</p><p>2022년 FlashAttention이 말한 <strong>exact attention</strong>은 sparse attention이나 low-rank approximation처럼 attention operator 자체를 근사하지 않는다는 뜻이었다. <a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>하지만 GPU 계산은 처음부터 유한정밀도다.</p><p>FA4의 polynomial exponential은 별도의 numerical approximation을 추가한다.</p><p>논문은 \(2^x\) polynomial을 400만 개 random input에서 검증했다. Degree-3의 FP32 maximum relative error는 약</p><pre class="math-expression" aria-label="원문의 수식 표기">8.77\times10^{-5}</pre><p>였고, BF16으로 반올림한 뒤 maximum relative error는 약</p><pre class="math-expression" aria-label="원문의 수식 표기">3.90\times10^{-3}</pre><p>으로 hardware MUFU와 거의 같은 수준이었다. 저자들은 BF16 quantization error가 degree 3 이상에서는 polynomial approximation error보다 더 크며, degree-3 polynomial이 99% input에서 hardware 결과와 1 BF16 ULP 이내였다고 보고한다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>따라서 구분은 이렇다.</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{attention 구조의 근사}
+\neq
+\text{finite-precision numerical approximation}
+}</pre><p>이다.</p></section><section><p class="chapter">15</p><h2>13. Online softmax도 매 block마다 완벽히 rescale할 필요는 없다</h2><p>Online softmax에서 새 maximum이 발견되면 과거 accumulator를</p><pre class="math-expression" aria-label="원문의 수식 표기">e^{m_{\text{old}}-m_{\text{new}}}</pre><p>로 rescale해야 한다.</p><p>FA4는 max 변화가 작으면 이 rescaling을 건너뛰고, 충분히 큰 변화가 있을 때만 수행한 뒤 최종 normalization에서 정확한 statistics를 사용한다. 논문은 threshold를 두어 중간 rescaling을 줄이고, 최종 \(m_{\text{final}},\ell_{\text{final}}\)로 normalization한다고 설명한다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>여기에는 매우 일반적인 알고리즘 패턴이 있다.</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{중간 단계에서 invariant를 항상 즉시 복구할 필요가 없다면,
+비싼 정합 작업을 지연시킬 수 있다.}
+}</pre><p>데이터베이스의 deferred constraint check, write buffering, lazy reconciliation과 비슷하다.</p></section><section><p class="chapter">16</p><h2>14. Forward와 backward의 병목도 다르다</h2><p>Forward attention은 \(QK^\top\), softmax, \(PV\)라는 구조라 exp throughput이 중요하다.</p><p>Backward는 논문 기준 한 iteration에서 MMA가 다섯 번 들어가며 \(dQ,dK,dV\) 등을 계산한다. 이쪽에서는 shared-memory traffic과 atomic accumulation이 더 중요해진다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>FA4는 Blackwell의 <strong>2-CTA MMA</strong>를 활용한다.</p><p>두 CTA가 하나의 MMA를 협력해서 수행하고 operand를 나눠 staging하므로 shared-memory 중복 traffic을 줄일 수 있다. 저자들은 이 구조를 이용해 backward의 global atomic add 수도 절반으로 줄였다고 설명한다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>즉</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{하나의 kernel 안에서도 phase마다 병목이 다르다.}
+}</pre></section><section><p class="chapter">17</p><h2>15. 실제 benchmark 숫자는 어떻게 읽어야 하나</h2><p>FA4는 B200 GPU에서 BF16 input, sequence length 1K~32K, causal/non-causal, 여러 head dimension으로 측정됐다.</p><p>Forward에서 논문은</p><pre class="math-expression" aria-label="원문의 수식 표기">1.1\sim1.3\times</pre><p>cuDNN 9.13 대비,</p><pre class="math-expression" aria-label="원문의 수식 표기">2.1\sim2.7\times</pre><p>Triton 대비 속도향상을 보고한다.</p><p>전체 benchmark 중 최대는 약</p><pre class="math-expression" aria-label="원문의 수식 표기">1613\text{ TFLOPs/s}</pre><p>로 B200 theoretical peak의 약</p><pre class="math-expression" aria-label="원문의 수식 표기">71\%</pre><p>다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>특히 저자들은 sequence length 4K 이상에서 모든 해당 baseline을 일관되게 앞섰다고 보고한다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>하지만 더 중요한 문장은 그 다음이다.</p><p>논문은 초기 구현 이후 <strong>더 최신 cuDNN이 논문에서 사용한 여러 기법을 도입하여 FA4와 비슷한 성능을 내기 시작했다</strong>고 적는다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>따라서 연구의 핵심을</p><blockquote>FA4가 cuDNN보다 30% 빠르다</blockquote><p>로 기억하면 금방 낡는다.</p><p>더 오래가는 지식은</p><blockquote><strong>왜 병목이 exp와 shared memory로 이동했으며, 그 병목을 어떤 구조로 제거했는가</strong></blockquote><p>다.</p></section><section><p class="chapter">18</p><h2>16. GQA와 FlashAttention은 서로 다른 질문에 답한다</h2><p>10월 1일 배운 GQA를 연결하자.</p><p>GQA는 주로</p><pre class="math-expression" aria-label="원문의 수식 표기">H_{kv}</pre><p>를 줄여 KV cache capacity와 decode memory bandwidth를 낮춘다.</p><p>반면 FlashAttention은 주어진 \(Q,K,V\)에 대해 attention을 어떤 tile 순서와 memory hierarchy에서 계산할지를 최적화한다.</p><p>단순화하면</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{GQA}:
+\text{무엇을 얼마나 저장하는가}
+}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{FlashAttention}:
+\text{필요한 계산을 어떻게 이동·배치·중첩하는가}
+}</pre><p>다.</p><p>둘은 경쟁관계가 아니다.</p><p>실제 LLM은 GQA와 FlashAttention을 동시에 사용할 수 있다.</p></section><section><p class="chapter">19</p><h2>17. Speculative decoding과도 해결하는 층이 다르다</h2><p>9월 28일의 speculative decoding은</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{autoregressive serial steps}</pre><p>를 줄이려 했다.</p><p>FlashAttention은</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{한 attention operation 내부}</pre><p>를 빠르게 만든다.</p><p>LLM latency를 아주 거칠게</p><pre class="math-expression" aria-label="원문의 수식 표기">T_{\text{total}}
+=
+T_{\text{prefill}}
++
+T_{\text{decode-attn}}
++
+T_{\text{decode-other}}</pre><p>라 하면,</p><p>FlashAttention은 prefill과 attention kernel,</p><p>GQA는 KV memory/bandwidth,</p><p>speculative decoding은 serial decode step</p><p>을 각각 다른 방향에서 줄인다.</p><p>좋은 시스템 최적화는 단일 기술 하나가 아니라 <strong>서로 다른 병목층을 겹쳐 최적화하는 것</strong>이다.</p></section><section><p class="chapter">20</p><h2>18. 2026년의 또 다른 흐름: 최고성능과 개발 유연성을 다시 합친다</h2><p>FA4는 CuTe-DSL이라는 Python embedded DSL로 구현됐고, 논문은 기존 C++ template 기반 방식보다 <strong>20~30배 빠른 compile time</strong>을 보고한다. <a href="https://proceedings.mlsys.org/paper_files/paper/2026/hash/ae8b0b5838ba510daff1198474e7b984-Abstract-Conference.html" target="_blank" rel="noopener noreferrer">MLSys Proceedings</a></p><p>2026-03-05 PyTorch는 FlexAttention에 FA4 backend를 통합했다고 발표했다. 사용자 정의 score modification과 block sparsity를 FA4 pipeline 안에서 사용할 수 있게 했으며, compute-bound workload에서 기존 Triton backend 대비 <strong>1.2~3.2배</strong>의 성능 개선을 보고했다. <a href="https://pytorch.org/blog/flexattention-flashattention-4-fast-and-flexible/" target="_blank" rel="noopener noreferrer">PyTorch</a></p><p>이 흐름은 중요하다.</p><p>예전 trade-off는</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{유연한 high-level code}
+\quad\text{vs}\quad
+\text{빠른 low-level kernel}</pre><p>이었다.</p><p>최근의 목표는 compiler와 DSL을 이용해</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{유연한 API}
++
+\text{hardware-specific fast path}
+}</pre><p>를 동시에 얻는 것이다.</p><p>즉 AI systems의 또 다른 희소자원은 GPU뿐 아니라 <strong>고성능 kernel을 개발·컴파일·유지하는 엔지니어링 시간</strong>이다.</p></section><section><p class="chapter">21</p><h2>19. 반대 관점과 한계</h2><p>FA4의 설계를 “미래 GPU에서도 그대로 최적”이라고 보면 안 된다. 논문 자체가 Blackwell 세대의 자원비율에 맞춰 설계됐다. GPU 세대가 바뀌어 SFU나 shared-memory bandwidth가 다시 크게 증가하면 병목은 또 이동할 수 있다. <a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>또 FlashAttention은 \(N^2\) attention matrix를 저장하지 않지만 dense attention의 모든 Query-Key pair 계산은 여전히 필요하다.</p><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+O(N)\text{ intermediate memory}
+\neq
+O(N)\text{ arithmetic}
+}</pre><p>이다.</p><p>매우 긴 context에서는 \(O(N^2d)\) compute 자체가 다시 중요해진다.</p><p>또한 1613 TFLOPs/s는 attention kernel 성능이다. 실제 end-to-end LLM에서는 MLP, communication, KV cache, scheduler, sampling, interconnect 등이 전체 throughput을 제한할 수 있다.</p></section><section><p class="chapter">22</p><h2>20. 시스템 렌즈: 병목은 사라지는 것이 아니라 이동한다</h2><p>FlashAttention의 발전사를 보면 시스템 최적화의 전형적인 feedback loop가 보인다.</p><p>처음에는</p><pre class="math-expression" aria-label="원문의 수식 표기">N^2\text{ HBM materialization}</pre><p>이 병목이었다.</p><p>그걸 줄이고 나니</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{parallelism과 occupancy}</pre><p>가 보였다.</p><p>Hopper에서는</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{memory movement와 MMA overlap}</pre><p>이 중요해졌다.</p><p>Blackwell에서는 Tensor Core가 더 빨라지자</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{exp와 shared-memory traffic}</pre><p>이 새 병목이 됐다.</p><p>즉</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{병목을 제거하면 다음 병목의 상대적 중요도가 커진다.}
+}</pre></section><section><p class="chapter">23</p><h2>21. 경제학 렌즈: 자원의 절대량보다 상대적 희소성이 중요하다</h2><p>GPU도 여러 생산요소의 묶음이다.</p><p>Tensor FLOPs, HBM bandwidth, shared-memory bandwidth, SFU throughput, register/TMEM capacity, interconnect, engineering time이 함께 생산을 만든다.</p><p>Tensor Core만 크게 늘어나면 Tensor FLOPs는 상대적으로 풍부해진다.</p><p>그러면 늘지 않은</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{SFU}</pre><p>나</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{memory bandwidth}</pre><p>의 shadow price가 올라간다.</p><p>공장에서 절단기만 두 배 들이고 포장라인은 그대로 두는 것과 같다.</p><p>전체생산량은 절단기의 peak보다 <strong>가장 희소한 보완재</strong>에 의해 정해진다.</p></section><section><p class="chapter">24</p><h2>22. 제약이론 렌즈: 가장 빠른 stage가 아니라 가장 느린 stage가 throughput을 결정한다</h2><p>파이프라인이</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{matmul}
+\rightarrow
+\text{softmax}
+\rightarrow
+\text{matmul}</pre><p>이라면 matmul 하나를 무한히 빠르게 해도 softmax가 그대로면 전체 속도는 제한된다.</p><p>FA4가 하는 일은 두 가지다.</p><p>첫째, bottleneck 자체를 줄인다.</p><p>둘째, 줄이기 어려운 bottleneck을 다른 작업과 <strong>시간적으로 overlap</strong>한다.</p><p>시스템 성능에서 중요한 것은</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{각 stage의 peak 성능}
+}</pre><p>보다</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{pipeline balance와 idle time}
+}</pre><p>인 경우가 많다.</p></section><section><p class="chapter">25</p><h2>23. Goodhart 렌즈: TFLOPs가 목적이 되면 무엇을 놓치는가</h2><p>Kernel 연구에서는 TFLOPs/s가 편리한 KPI다.</p><p>하지만 실제 서비스의 목적은</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{tokens/s}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{time-to-first-token}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{inter-token latency}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{GPU당 동시 사용자}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{energy/token}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{원가/token}</pre><p>일 수 있다.</p><p>FA4의 71% peak utilization은 매우 유의미한 engineering result지만</p><pre class="math-expression" aria-label="원문의 수식 표기">71\%\text{ TFLOPs}
+\Rightarrow
+71\%\text{ end-to-end 개선}</pre><p>은 아니다.</p><p>항상</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{최적화한 지표와 실제 목적함수가 같은가?}
+}</pre><p>를 확인해야 한다.</p></section><section><p class="chapter">26</p><h2>24. 산업·투자 렌즈로 확장하면</h2><p>이 원리는 AI 인프라 병목을 볼 때도 유용하다.</p><p>GPU compute가 빠르게 늘면 그에 맞춰</p><p>HBM bandwidth,</p><p>network fabric,</p><p>optical interconnect,</p><p>power delivery,</p><p>cooling,</p><p>storage throughput</p><p>도 충분히 늘어야 한다.</p><p>하나가 뒤처지면 그 부품의 상대적 희소성이 커진다.</p><p>따라서 기술적으로는</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{가장 빠르게 성장한 자원보다
+가장 느리게 따라오는 보완재를 찾아보는 것}
+}</pre><p>이 좋은 탐색법이다.</p><p>다만 투자판단에서는 기술적 병목만으로 충분하지 않다. 공급증설 속도, 경쟁구조, 고객 집중도, 가격결정력, 자본집약도까지 별도로 봐야 한다.</p></section><section><p class="chapter">27</p><h2>오늘 기억할 한 문장</h2><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{하드웨어 최적화에서 중요한 것은
+가장 빠른 유닛의 peak가 아니라
+전체 pipeline의 가장 느린 보완재와
+그 자원을 얼마나 겹쳐 사용할 수 있는가이다.}
+}</pre><p>FlashAttention의 역사를 압축하면</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{HBM I/O}
+\rightarrow
+\text{occupancy}
+\rightarrow
+\text{async overlap}
+\rightarrow
+\text{exp / shared-memory bottleneck}</pre><p>으로 병목이 이동해 왔다.</p><p>그리고 가장 일반적인 시스템 교훈은 이것이다.</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{현재 제약을 해결했을 때
+다음 제약이 무엇이 될지를 미리 보는 것이 시스템 사고다.}
+}</pre></section><section><p class="chapter">28</p><h2>추가 학습 자료 — 정확히 3개</h2><p><strong>1. “FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness” — Tri Dao, Daniel Y. Fu, Stefano Ermon, Christopher Ré / Stanford University; Atri Rudra / University at Buffalo, SUNY. arXiv 최초 공개 2022-05-27, NeurIPS 2022.</strong> 오늘 FA4를 이해하는 가장 중요한 기초 원논문이다. §2의 GPU memory hierarchy와 §3.1의 tiling·online softmax·recomputation에 집중하라. 핵심 질문은 <strong>“왜 FLOPs를 더 써도 HBM traffic이 줄면 빨라질 수 있는가?”</strong>다. 예상 학습시간은 <strong>35~50분</strong>이다. <a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener noreferrer">arXiv</a>  <br><a href="https://arxiv.org/abs/2205.14135?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">FlashAttention 원논문</a></p><p><strong>2. “FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision” — Jay Shah, Ganesh Bikshandi / Colfax Research; Ying Zhang / Meta; Vijay Thakkar, Pradeep Ramani / NVIDIA; Tri Dao / Princeton University·Together AI. 2024-07-11.</strong> Hopper에서 IO-aware attention이 warp specialization, TMA, asynchronous Tensor Core, FP8로 어떻게 진화했는지 보여준다. Pipeline diagram과 GEMM-softmax overlap에 집중하고 <strong>“FA3에서 해결한 병목 중 Blackwell에서 다시 달라진 것은 무엇인가?”</strong>를 비교하라. 예상 학습시간은 <strong>40~55분</strong>이다. <a href="https://arxiv.org/abs/2407.08608?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">arXiv</a>  <br><a href="https://arxiv.org/abs/2407.08608?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">FlashAttention-3 원논문</a></p><p><strong>3. “FlexAttention + FlashAttention-4: Fast and Flexible” — Driss Guessous, Reuben Stern, Markus Hoehnerbach, Fung Xie, Ted Zadouri, Jay Shah, Tri Dao / PyTorch, 2026-03-05.</strong> 연구용 flexibility와 최고성능 kernel을 다시 결합하려는 2026년 실무 흐름을 보여준다. “Blackwell: bigger tensor cores, bigger problems”, “FlashAttention-4 as the foundation”, Inductor→CuTeDSL 부분을 읽어라. 핵심 질문은 <strong>“compiler/DSL이 hardware-specific optimization의 유지보수 비용을 얼마나 낮출 수 있는가?”</strong>다. 예상 학습시간은 <strong>25~35분</strong>이다. <a href="https://pytorch.org/blog/flexattention-flashattention-4-fast-and-flexible/" target="_blank" rel="noopener noreferrer">PyTorch</a>  <br><a href="https://pytorch.org/blog/flexattention-flashattention-4-fast-and-flexible/?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">PyTorch — FlexAttention + FlashAttention-4</a></p></section><section class="question-section"><p class="eyebrow">PAUSE & REFLECT</p><h2>잠깐, 내 언어로 설명해 보기</h2><div class="question-item"><h3>Q1.</h3><p>B200 forward tile에서</p><pre class="math-expression" aria-label="원문의 수식 표기">M=N=d=128</pre><p>이고 논문의 단순 모델이</p><pre class="math-expression" aria-label="원문의 수식 표기">T_{\text{MMA}}
+=
+\frac{4MNd}{8192}</pre><pre class="math-expression" aria-label="원문의 수식 표기">T_{\text{SMEM}}
+=
+\frac{3MNd}{8192}</pre><pre class="math-expression" aria-label="원문의 수식 표기">T_{\exp}
+=
+\frac{MN}{16}</pre><p>이라고 하자.</p><p>세 값을 각각 계산하고, 어느 자원이 bottleneck 후보인지 설명하라. Tensor Core throughput만 두 배가 되어 \(T_{\text{MMA}}\)가 절반이 되더라도 전체 처리량이 두 배가 되지 않는 이유도 설명하라.</p><details><summary>해설 보기 +</summary><p>문제 1에서</p><pre class="math-expression" aria-label="원문의 수식 표기">128^3
+=
+2{,}097{,}152.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">T_{\text{MMA}}
+=
+1024</pre><pre class="math-expression" aria-label="원문의 수식 표기">T_{\text{SMEM}}
+=
+768</pre><pre class="math-expression" aria-label="원문의 수식 표기">T_{\exp}
+=
+1024</pre><p>cycles다.</p><p>MMA와 exponential unit이 동급의 주된 bottleneck 후보다.</p><p>Tensor Core를 두 배 빠르게 해도 exp와 shared-memory path는 그대로이므로 전체 pipeline throughput은 두 배가 되지 않는다.</p></details></div><div class="question-item"><h3>Q2.</h3><p>Score가</p><pre class="math-expression" aria-label="원문의 수식 표기">[1,2,3,0]</pre><p>이고 value가</p><pre class="math-expression" aria-label="원문의 수식 표기">[10,20,30,40]</pre><p>인 한 attention row를</p><pre class="math-expression" aria-label="원문의 수식 표기">[1,2]</pre><p>와</p><pre class="math-expression" aria-label="원문의 수식 표기">[3,0]</pre><p>두 block으로 처리한다고 하자.</p><p>첫 block의 \(m_1,\ell_1,o_1\), 두 번째 block에서 필요한 rescaling factor, 최종 output을 계산하라.</p><details><summary>해설 보기 +</summary><p>문제 2에서 첫 block은</p><pre class="math-expression" aria-label="원문의 수식 표기">m_1=2</pre><pre class="math-expression" aria-label="원문의 수식 표기">\ell_1
+=
+e^{-1}+1
+\approx1.3679</pre><pre class="math-expression" aria-label="원문의 수식 표기">o_1
+=
+e^{-1}(10)+20
+\approx23.6788.</pre><p>두 번째 block 최대값은 3이므로 이전 accumulator의 rescaling factor는</p><pre class="math-expression" aria-label="원문의 수식 표기">e^{2-3}
+=
+e^{-1}
+\approx0.3679.</pre><p>결과적으로</p><pre class="math-expression" aria-label="원문의 수식 표기">\ell_2
+\approx1.5530</pre><pre class="math-expression" aria-label="원문의 수식 표기">o_2
+\approx40.7024</pre><p>이고</p><pre class="math-expression" aria-label="원문의 수식 표기">O
+=
+\frac{o_2}{\ell_2}
+\approx26.2089.</pre><p>전체 네 score를 한꺼번에 계산한 stable softmax 결과와 같다.</p></details></div><div class="question-item"><h3>Q3.</h3><p>한 엔지니어가 말한다.</p><blockquote>“FlashAttention은 memory를 \(O(N^2)\)에서 \(O(N)\)으로 줄였으니 long-context attention도 이제 \(O(N)\)이다.”</blockquote><p>왜 틀렸는가?</p><p>다음 세 가지를 구분해서 설명하라.</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{intermediate-memory footprint}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{HBM I/O}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{arithmetic compute}</pre><details><summary>해설 보기 +</summary><p>문제 3에서 FlashAttention이 없애는 핵심은 \(N\times N\) intermediate를 HBM에 저장하는 것이다.</p><p>그래서 intermediate memory footprint와 HBM traffic은 크게 줄어든다.</p><p>하지만 dense attention은 여전히 각 Query와 각 Key의 pair를 계산해야 한다.</p><p>따라서 핵심 arithmetic은 여전히 대략</p><pre class="math-expression" aria-label="원문의 수식 표기">O(N^2d)</pre><p>다.</p><p>즉</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+O(N)\text{ memory}
+\neq
+O(N)\text{ compute}
+}</pre><p>다.</p></details></div></section><section class="sources"><p class="eyebrow">READ FURTHER</p><h2>원고에 포함된 자료</h2><p class="source-date">원고에 기재된 출처를 보존했습니다. 아카이브 수록일에 자료를 다시 검증했다는 뜻은 아닙니다.</p><ol><li><a href="https://arxiv.org/pdf/2603.05451" target="_blank" rel="noopener noreferrer">arXiv ↗</a><p>2026-10-04 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://arxiv.org/abs/2603.05451?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">중심 원자료 — FlashAttention-4 arXiv ↗</a><p>2026-10-04 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://proceedings.mlsys.org/paper_files/paper/2026/hash/ae8b0b5838ba510daff1198474e7b984-Abstract-Conference.html?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">MLSys 2026 공식 페이지 ↗</a><p>2026-10-04 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://arxiv.org/abs/2205.14135" target="_blank" rel="noopener noreferrer">FlashAttention 원논문 ↗</a><p>2026-10-04 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://pytorch.org/blog/flexattention-flashattention-4-fast-and-flexible/" target="_blank" rel="noopener noreferrer">PyTorch — FlexAttention + FlashAttention-4 ↗</a><p>2026-10-04 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://arxiv.org/abs/2407.08608?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">FlashAttention-3 원논문 ↗</a><p>2026-10-04 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li></ol></section></div><div class="back-bottom"><a href="../index.html#archive">← 다른 읽을거리 살펴보기</a><span>조금씩, 오래.</span></div></main><footer><a href="../index.html" class="brand"><svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M3 4h9c2 0 3 1 3 3v17c-1-2-3-3-6-3H3V4Zm22 0h-7v17h7V4Z" fill="currentColor"/></svg><span>매일의 발견</span></a><p>공개 학습 아카이브 · 시간대 Asia/Seoul</p><span>오래 남을 배움을 위해.</span></footer><script src="../reading.js" defer></script></body></html>

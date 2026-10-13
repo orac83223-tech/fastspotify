@@ -5,3 +5,17 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}@media print{.site-header,.reading-tools,.reading-progress,footer,.back-bottom{display:none}.reading-main{max-width:none;margin:0;padding:0}.article-body{font-size:12pt}.question-section details{display:block}.question-section details p{display:block}body{background:white}a{color:black}.reading-main>h1{font-size:28pt}.article-body section{break-inside:avoid}}
 
 [hidden]{display:none!important}
+
+
+/* Historical manuscripts retain their original code, tables and math notation. */
+.article-body pre {overflow-x:auto; padding:1rem; border:1px solid var(--line,#ddd); border-radius:8px; background:#f6f4ee; font-size:.88em; line-height:1.7; white-space:pre;}
+.article-body code {font-family:ui-monospace,SFMono-Regular,Consolas,monospace; font-size:.9em; overflow-wrap:anywhere;}
+.article-body pre code {font-size:inherit; overflow-wrap:normal;}
+.article-body .math-expression {white-space:pre-wrap; overflow-wrap:anywhere;}
+.article-body .table-scroll {overflow-x:auto; margin:1.5rem 0;}
+.article-body table {width:100%; border-collapse:collapse; font-size:.9em; line-height:1.7;}
+.article-body th,.article-body td {border:1px solid var(--line,#ddd); padding:.65rem; text-align:left; vertical-align:top;}
+.article-body th {background:#f6f4ee;}
+.article-body blockquote {margin:1.5rem 0; border-left:3px solid #798971; padding:.5rem 1rem; line-height:1.9;}
+.article-body ul {padding-left:1.5rem; line-height:1.9;}
+.article-body h3 {margin-top:1.8rem; line-height:1.5;}

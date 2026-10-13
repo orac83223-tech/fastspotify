@@ -1,0 +1,137 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="CS·AI·금융공학과 관심사 인사이트. 배움이 쌓이는 공개 아카이브."><meta name="robots" content="noindex, nofollow"><title>DPO(Direct Preference Optimization): 보상모델과 PPO 없이 LLM이 인간의 선호를 배우는 이유 | 매일의 발견</title><link rel="icon" href="../favicon.svg"><link rel="stylesheet" href="../style.css"></head><body><a class="skip" href="#content">본문으로 이동</a><header class="site-header"><a href="../index.html" class="brand"><svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M3 4h9c2 0 3 1 3 3v17c-1-2-3-3-6-3H3V4Zm22 0h-7v17h7V4Z" fill="currentColor"/></svg><span>매일의 발견</span></a><nav aria-label="메뉴"><a href="../index.html#archive">아카이브</a></nav></header><div class="reading-progress" id="reading-progress"></div><main class="reading-main" id="content" data-article-id="2026-10-07-learning"><div class="reading-tools"><button id="article-save" aria-pressed="false">☆ 글 저장</button><button id="font-size" aria-pressed="false">가 +</button><button id="print">인쇄</button></div><div class="article-eyebrow">CS·AI·금융공학 <span> / </span> AI</div><h1>DPO(Direct Preference Optimization): 보상모델과 PPO 없이 LLM이 인간의 선호를 배우는 이유</h1><p class="reading-summary">같은 질문에 대한 답변 A와 B 중 사람이 A를 선호한다는 정보만으로, LLM을 어떻게 더 유용한 답변 쪽으로 학습시킬까?</p><div class="reading-meta"><time datetime="2026-10-07">2026.10.07</time><span>·</span><span>25분 읽기</span><span class="pill">읽을거리</span></div><div class="article-body"><section><p class="chapter">01</p><h2>아카이브 수록 안내</h2><p>원고 표기일: 2026-10-07 · 아카이브 게시일: 2026-10-13 (한국시간).</p><p>2026-10-07 · 30회차 · AI</p><p>과거 원고의 본문·수식·문제·출처를 보존했습니다. 본문 속 오늘·최신·확인일은 당시 원고의 표현이며, 이번 수록에서 내용과 출처를 새로 검증했다는 뜻은 아닙니다. 개인정보와 발송 상태 등 비공개 안내는 제외했습니다.</p></section><section><p class="chapter">02</p><h2>핵심 질문과 결론</h2><p><strong>핵심 질문:</strong> 같은 질문에 대한 답변 A와 B 중 사람이 A를 선호한다는 정보만으로, LLM을 어떻게 더 유용한 답변 쪽으로 학습시킬까? 전통적 RLHF는 별도의 보상모델과 강화학습을 사용했는데, DPO는 왜 단순한 분류 손실만으로 유사한 목표를 추구할 수 있을까?</p><p><strong>결론:</strong> DPO의 핵심은 “강화학습 목표를 버린다”가 아니라, KL-정규화 보상최대화 문제의 최적 정책을 수식으로 구한 뒤 그 관계를 역으로 사용한다는 데 있다. 최적 정책과 기준 정책의 로그확률비가 암묵적 보상으로 작동한다. 같은 질문에서 선호 답변과 비선호 답변의 보상차를 비교하면 계산하기 어려운 정규화상수까지 소거된다. 그 결과 정책모델 자체를 pairwise logistic loss로 학습할 수 있다. 다만 이론적 등가성에는 선호모형과 정책공간에 관한 가정이 있고, 실제 데이터의 편향·평가자 오류·분포 이동은 여전히 남는다.</p><p><strong>중심 원자료:</strong> Rafael Rafailov, Archit Sharma, Eric Mitchell, Stefano Ermon, Christopher D. Manning, Chelsea Finn, 「Direct Preference Optimization: Your Language Model is Secretly a Reward Model」, NeurIPS 2023. arXiv 최초 제출 2023-05-29, 확인한 arXiv v3은 2024-07-29 개정. <strong>원문 확인일: 2026-10-07 KST.</strong> 오늘은 논문 §3~5, §6의 결과·한계, 부록 A.1~A.2를 중심으로 살펴본다. <a href="https://papers.neurips.cc/paper_files/paper/2023/hash/a85b405ed65c6477a4fe8302b5e06ce7-Abstract-Conference.html" target="_blank" rel="noopener noreferrer">NeurIPS Papers</a></p><p><a href="https://papers.neurips.cc/paper_files/paper/2023/file/a85b405ed65c6477a4fe8302b5e06ce7-Paper-Conference.pdf?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">중심 원자료 — NeurIPS 2023 공식 PDF</a></p><p><a href="https://arxiv.org/html/2305.18290v3?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">수식이 읽기 쉬운 HTML판</a></p></section><section><p class="chapter">03</p><h2>1. 먼저 SFT와 RLHF를 구별하자</h2><p>언어모델은 앞선 토큰에 조건부로 다음 토큰을 예측한다. 질문을 \(x\), 답변의 토큰열을 \(y=(y_1,\dots,y_n)\), 모델의 파라미터를 \(\theta\)라고 하면 답변 전체의 조건부 확률은</p><pre class="math-expression" aria-label="원문의 수식 표기">\pi_\theta(y\mid x)
+=
+\prod_{t=1}^{n}\pi_\theta(y_t\mid x,y_{&lt;t})</pre><p>이다. \(\pi_\theta\)는 답변을 생성하는 확률분포, 즉 <strong>정책(policy)</strong> 이다. 로그를 취하면 곱이 합으로 바뀐다.</p><pre class="math-expression" aria-label="원문의 수식 표기">\log\pi_\theta(y\mid x)
+=
+\sum_{t=1}^{n}\log\pi_\theta(y_t\mid x,y_{&lt;t}).</pre><p>SFT(Supervised Fine-Tuning)는 정답으로 주어진 답변의 로그확률을 높인다. 하지만 “두 후보 중 어느 쪽이 더 좋은가?”라는 비교는 정답 문장 하나를 작성하는 것보다 수집하기 쉽다.</p><p>전통적 RLHF는 비교 데이터를 통해 별도의 보상모델 \(r_\phi(x,y)\)을 학습한 뒤, PPO 같은 강화학습으로 생성정책의 기대보상을 높인다.</p><p>DPO는 이 가운데 <strong>별도 보상모델 학습과 RL 최적화 단계</strong>를 생략한다. 사전학습·SFT나 선호 데이터 자체가 사라지는 것은 아니다. <a href="https://arxiv.org/html/2305.18290v3" target="_blank" rel="noopener noreferrer">arXiv</a></p></section><section><p class="chapter">04</p><h2>2. Bradley–Terry: 점수의 절댓값보다 두 답변의 차이가 중요하다</h2><p>같은 질문 \(x\)에 답변 A, B가 있다. 사람이 A를 B보다 선호할 확률을 보상의 차이로 표현하는 Bradley–Terry(BT) 모형은</p><pre class="math-expression" aria-label="원문의 수식 표기">P(A\succ B\mid x)
+=
+\frac{e^{r(x,A)}}{e^{r(x,A)}+e^{r(x,B)}}</pre><pre class="math-expression" aria-label="원문의 수식 표기">=
+\operatorname{sigmoid}(r(x,A)-r(x,B))</pre><p>이다.</p><p>여기서 \(r\)은 잠재적 보상, \(\operatorname{sigmoid}(z)=1/(1+e^{-z})\), 기호 \(A\succ B\)는 A 선호를 뜻한다.</p><p>예를 들어</p><pre class="math-expression" aria-label="원문의 수식 표기">r(A)=2,\qquad r(B)=1</pre><p>이라면 선호확률은</p><pre class="math-expression" aria-label="원문의 수식 표기">\operatorname{sigmoid}(1)\approx0.731</pre><p>이다.</p><p>두 점수에 똑같이 100을 더해도 확률은 같다. 즉 <strong>절대보상의 영점은 식별되지 않고 차이만 식별된다.</strong> 이것은 뒤에서 정규화상수가 사라지는 이유다.</p><p>BT는 사람의 판단을 무오류의 객관적 진리로 가정하지 않는다. 단지 선호확률을 설명하는 특정 통계모형이며, 서로 다른 평가자·상황·품질기준을 모두 완벽히 표현하지는 못한다.</p></section><section><p class="chapter">05</p><h2>3. RLHF의 목적함수를 다시 쓰면</h2><p>기준정책을 \(\pi_{\mathrm{ref}}(y\mid x)\), 새 정책을 \(\pi(y\mid x)\), 보상을 \(r(x,y)\), 양의 규제강도를 \(\beta\)라 하자.</p><p>질문 \(x\)를 고정했을 때 전형적인 KL-정규화 목적은</p><pre class="math-expression" aria-label="원문의 수식 표기">J(\pi)
+=
+E_{y\sim\pi}[r(x,y)]
+-
+\beta D_{\mathrm{KL}}(\pi\Vert\pi_{\mathrm{ref}})</pre><p>를 최대화하는 것이다.</p><p>KL divergence는</p><pre class="math-expression" aria-label="원문의 수식 표기">D_{\mathrm{KL}}(\pi\Vert\pi_{\mathrm{ref}})
+=
+\sum_y
+\pi(y\mid x)
+\log\frac{\pi(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}</pre><p>이다.</p><p>이는 새로운 정책이 기준정책에서 크게 벗어나면 비용을 지불한다는 뜻이다. 보상모델이 잘못 높은 점수를 주는 이상한 문구만 생성하는 일을 억제하려는 목적도 있다.</p><p>확률들의 합이 1이라는 제약 아래 미분하면, 최적정책은</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\pi^*(y\mid x)
+=
+\frac{
+\pi_{\mathrm{ref}}(y\mid x)e^{r(x,y)/\beta}
+}{
+Z(x)
+}
+}</pre><p>가 된다.</p><p>여기서</p><pre class="math-expression" aria-label="원문의 수식 표기">Z(x)
+=
+\sum_y
+\pi_{\mathrm{ref}}(y\mid x)e^{r(x,y)/\beta}</pre><p>는 전체 확률을 1로 만드는 분배함수(partition function)다.</p><p>가능한 답변이 사실상 무한하므로 \(Z\)를 직접 계산하기는 어렵다. 그러나 <strong>그 값을 계산하지 않아도 되는 방법</strong>이 있다.</p><p>이 결과는 중심 논문의 식 (3)~(4) 및 부록 A.1에 해당한다. <a href="https://arxiv.org/html/2305.18290v3" target="_blank" rel="noopener noreferrer">arXiv</a></p></section><section><p class="chapter">06</p><h2>4. 정책을 보상의 표현으로 뒤집는다</h2><p>최적정책 식 양쪽에 로그를 취하면</p><pre class="math-expression" aria-label="원문의 수식 표기">\log\pi^*(y\mid x)
+=
+\log\pi_{\mathrm{ref}}(y\mid x)
++
+r(x,y)/\beta
+-
+\log Z(x).</pre><p>정리하면</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+r(x,y)
+=
+\beta\log
+\frac{\pi^*(y\mid x)}{\pi_{\mathrm{ref}}(y\mid x)}
++
+\beta\log Z(x)
+}</pre><p>이다.</p><p>핵심은 보상을 <strong>정책과 기준정책의 로그확률비</strong>로 표현했다는 것이다.</p><p>같은 질문 \(x\)의 두 답변 A와 B를 빼면 \(\log Z(x)\)는 양쪽에 동일하게 들어 있으므로 소거된다.</p><pre class="math-expression" aria-label="원문의 수식 표기">r(x,A)-r(x,B)
+=
+\beta
+\left[
+\log\frac{\pi^*(A\mid x)}{\pi_{\mathrm{ref}}(A\mid x)}
+-
+\log\frac{\pi^*(B\mid x)}{\pi_{\mathrm{ref}}(B\mid x)}
+\right].</pre><p>여기에 BT 모형을 대입하고 미지의 최적정책 \(\pi^*\) 대신 학습할 모델 \(\pi_\theta\)를 쓰면 된다.</p><p><strong>별도 보상모델을 명시적으로 보유하지 않더라도 정책의 확률비 자체가 암묵적 보상 역할을 한다.</strong></p><p>이것이 논문 제목의 “언어모델이 사실상 보상모델이다”라는 의미다.</p></section><section><p class="chapter">07</p><h2>5. DPO 손실의 완성</h2><p>데이터가 \((x,y_w,y_l)\) 형태라고 하자.</p><p>\(y_w\)는 선호(chosen/winner), \(y_l\)은 비선호(rejected/loser) 답변이다.</p><p>정책의 상대 로그확률 증가량을</p><pre class="math-expression" aria-label="원문의 수식 표기">a_\theta(x,y)
+=
+\log\pi_\theta(y\mid x)
+-
+\log\pi_{\mathrm{ref}}(y\mid x)</pre><p>로 정의하면 한 쌍의 DPO 손실은</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\ell_{\mathrm{DPO}}
+=
+-\log\operatorname{sigmoid}
+\left(
+\beta
+[
+a_\theta(x,y_w)
+-
+a_\theta(x,y_l)
+]
+\right)
+}</pre><p>이다.</p><p>전체 학습손실은 데이터 평균</p><pre class="math-expression" aria-label="원문의 수식 표기">E_{\mathcal D}[\ell_{\mathrm{DPO}}]</pre><p>이다.</p><p>어려운 RL rollout 없이도 선호 답변과 비선호 답변의 sequence log probability만 구해서 역전파할 수 있다.</p><p>단, 학습 중인 정책에는 gradient를 흘리고 기준정책은 고정한다.</p><p>여기서 중요한 것은 \(\pi_\theta(y_w\mid x)\)만 크게 만들지 않는다는 점이다.</p><p><strong>기준정책에 비해 선호 답변이 비선호 답변보다 상대적으로 얼마나 더 유리해졌는가</strong>를 본다.</p></section><section><p class="chapter">08</p><h2>6. 손으로 계산해보자</h2><p><strong>[교육용 가정 — 실제 학습 실험값이 아님]</strong></p><p>질문 \(x\)에 대해 후보 A(chosen), B(rejected), 그 밖의 응답 묶음 O가 있고 확률이 다음과 같다고 하자.</p><div class="table-scroll"><table><thead><tr><th>응답</th><th>기준정책 \(\pi_{\mathrm{ref}}\)</th><th>학습정책 \(\pi_\theta\)</th></tr></thead><tbody><tr><td>A</td><td>0.20</td><td>0.30</td></tr><tr><td>B</td><td>0.10</td><td>0.05</td></tr><tr><td>O</td><td>0.70</td><td>0.65</td></tr></tbody></table></div><p>각 열의 합은 1이다.</p><pre class="math-expression" aria-label="원문의 수식 표기">\beta=0.5</pre><p>로 놓자.</p><p>A의 로그확률비는</p><pre class="math-expression" aria-label="원문의 수식 표기">a(A)
+=
+\ln(0.30/0.20)
+=
+\ln1.5
+\approx0.4055.</pre><p>B는</p><pre class="math-expression" aria-label="원문의 수식 표기">a(B)
+=
+\ln(0.05/0.10)
+=
+\ln0.5
+\approx-0.6931.</pre><p>따라서 선호 margin은</p><pre class="math-expression" aria-label="원문의 수식 표기">\Delta
+=
+a(A)-a(B)
+=
+\ln3
+\approx1.0986</pre><p>이고 DPO logit은</p><pre class="math-expression" aria-label="원문의 수식 표기">z
+=
+\beta\Delta
+\approx0.5493.</pre><p>BT식 선호확률 예측은</p><pre class="math-expression" aria-label="원문의 수식 표기">\operatorname{sigmoid}(z)\approx0.634</pre><p>이며 손실은</p><pre class="math-expression" aria-label="원문의 수식 표기">-\ln(0.634)\approx0.456.</pre><p>학습 전 정책이 기준정책과 같았다면</p><pre class="math-expression" aria-label="원문의 수식 표기">a(A)=a(B)=0</pre><p>이고, 확률은 0.5, 손실은</p><pre class="math-expression" aria-label="원문의 수식 표기">-\ln0.5\approx0.693</pre><p>이다.</p><p>A 대 B의 상대적 유리함이 커지며 손실이 내려갔다.</p><p>이는 <strong>한 쌍의 교육용 계산</strong>이지 실제 사람 평가에서 A가 63.4% 확률로 선택됐다는 관측결과는 아니다.</p></section><section><p class="chapter">09</p><h2>7. Gradient를 보면 왜 틀린 쌍에 더 집중하는지 알 수 있다</h2><pre class="math-expression" aria-label="원문의 수식 표기">z
+=
+\beta
+[
+a_\theta(x,y_w)
+-
+a_\theta(x,y_l)
+]</pre><pre class="math-expression" aria-label="원문의 수식 표기">\ell=-\log\operatorname{sigmoid}(z).</pre><p>미분하면</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{d\ell}{dz}
+=
+\operatorname{sigmoid}(z)-1.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\nabla_\theta\ell
+=
+-\beta
+[
+1-\operatorname{sigmoid}(z)
+]
+\left[
+\nabla_\theta\log\pi_\theta(y_w\mid x)
+-
+\nabla_\theta\log\pi_\theta(y_l\mid x)
+\right].</pre><p>현재 모델이 비선호 답변을 더 유리하게 평가해 \(z&lt;0\)이면 앞의 weight가 크다.</p><p>이미 선호를 강하게 반영해 \(z\gg0\)이면 weight가 작다.</p><p>즉 DPO는 <strong>기준정책 대비 순위가 아직 잘못된 사례에 더 큰 학습압력</strong>을 주는 구조다. <a href="https://arxiv.org/html/2305.18290v3" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>하지만 경고가 하나 있다.</p><p>두 답변의 상대 log probability만 비교하므로, 특정 training step에서 chosen의 <strong>절대 likelihood가 반드시 증가한다고 보장하지는 않는다.</strong></p><p>Rejected가 더 빠르게 내려가도 margin은 커진다.</p><p>별도의 SFT 보조손실이나 절대확률·생성품질 모니터링이 필요한 이유다.</p></section><section><p class="chapter">10</p><h2>8. \(\beta\)와 기준정책은 무엇을 조절하나</h2><p>출발한 KL-정규화 RL 목적함수에서 \(\beta\)가 크면 기준정책에서 이탈하는 비용이 크고, 작으면 보상을 위해 더 많이 이동할 여지가 있다.</p><p>다만 <strong>유한한 선호쌍을 신경망으로 학습하는 DPO 구현</strong>에서는 \(\beta\)가 loss logit과 gradient 규모에도 영향을 주므로</p><blockquote>\(\beta\)를 두 배로 키우면 실제 KL이 반드시 절반이 된다.</blockquote><p>와 같은 단순 법칙은 성립하지 않는다.</p><p>실측 KL과 품질을 함께 봐야 한다.</p><p>Reference model은 보통 SFT 출발 모델을 고정한 것이다.</p><p>고정 기준을 두는 것은 “잘하던 기본기”에서 갑자기 벗어나는 변화를 억제하는 앵커 역할을 한다.</p><p>하지만 그 기준 자체가 나쁜 습관을 갖고 있으면 좋은 행동도 과도하게 벌점받을 수 있다.</p><p>DPO가 KL의 철학을 계승하더라도 유한 데이터·제한된 모형공간에서 실제 KL이 원하는 값으로 엄밀히 유지된다는 보장은 없다.</p></section><section><p class="chapter">11</p><h2>9. 실제 구현은 생각보다 짧지만 데이터 처리에서 많이 틀린다</h2><p>개념적인 미니배치는 다음과 같다.</p><p>1. 동일한 prompt \(x\)에 chosen과 rejected completion을 붙인다.<br>2. 각 완성문장에 대한 정책과 기준정책의 <strong>completion token log probability 합</strong>을 각각 계산한다.<br>3. 기준모델 쪽 gradient는 중단한다.<br>4. Pairwise logits를 만들고 \(-\log\operatorname{sigmoid}\) 평균을 최소화한다.</p><p>의사코드는</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{pi\_gap}
+=
+\log\pi_\theta(y_w|x)
+-
+\log\pi_\theta(y_l|x)</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{ref\_gap}
+=
+\log\pi_{\mathrm{ref}}(y_w|x)
+-
+\log\pi_{\mathrm{ref}}(y_l|x)</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{loss}
+=
+-\operatorname{mean}
+[
+\operatorname{logsigmoid}
+(
+\beta(\text{pi\_gap}-\text{ref\_gap})
+)
+].</pre><p>실무 구현의 함정은 prompt token을 잘못 포함하거나, padding 위치의 log probability를 합산하거나, chosen/rejected에 서로 다른 chat template을 적용하거나, 답변 끝 EOS를 누락하는 것이다.</p><p>이 경우 수학적 목적함수는 맞아도 잘못된 확률을 학습한다.</p><p>Hugging Face TRL은 현재 DPOTrainer에서 prompt/chosen/rejected 형식과 여러 loss 변형을 문서화하고 있다. <a href="https://huggingface.co/docs/trl/dpo_trainer" target="_blank" rel="noopener noreferrer">Hugging Face</a></p></section><section><p class="chapter">12</p><h2>10. 논문의 성과를 평가할 때 무엇을 확인해야 하나</h2><p>원논문은 2023년 실험에서 감성 제어, Reddit TL;DR 요약, 단일턴 대화를 평가했다.</p><p>저자들은 DPO가 당시 PPO 기반 RLHF에 비슷하거나 더 나은 성능을 보이면서 학습 pipeline을 단순화했다고 보고한다.</p><p>OOD 실험인 CNN/DailyMail 요약에서는 GPT-4 평가기 기준, temperature 0에서 DPO 승률 0.36, PPO 0.26을 보고했다(논문 Table 1).</p><p>하지만 <strong>해당 benchmark·평가기·샘플링 온도에서의 관측치</strong>이지 모든 상황에서 36% 대 26%라는 뜻이 아니다.</p><p>저자들 자신도 평가자 prompt가 판단을 바꾸는 문제, 분포밖 일반화, 보상 과최적화, 당시 최대 약 6B 모델에서 더 큰 규모로의 확장 등을 한계로 제시했다.</p><p>따라서 단일 preference win rate만으로 정확성·안전성·추론능력 향상을 주장할 수 없다. <a href="https://arxiv.org/html/2305.18290v3" target="_blank" rel="noopener noreferrer">arXiv</a></p></section><section><p class="chapter">13</p><h2>11. 길이 편향과 데이터 인센티브</h2><p>Sequence log probability는 토큰별 log probability의 합이다.</p><p>예를 들어 chosen이 10토큰이고 토큰당 평균 log probability가 -1이면 전체는 -10이다.</p><p>Rejected가 5토큰이고 평균 -1.5이면 전체는 -7.5다.</p><p><strong>토큰당은 chosen이 더 자연스러워도 문장 전체 likelihood는 더 작다.</strong></p><p>기준정책과의 비율이 일부 차이를 상쇄하지만 답변 길이 관련 편향까지 자동으로 제거하지는 않는다.</p><p>선호 평가자가 긴 답변을 “성실해 보인다”는 이유로 더 자주 선택하면 모델은 정확한 답변 대신 장황한 답변을 만드는 쪽으로 학습될 수 있다.</p><p>반대로 간결함만 보상하면 중요한 단서를 생략한다.</p><p>이는 <strong>학습 데이터의 인센티브가 모델의 행동목표가 되는 문제</strong>다.</p><p>2024년 NeurIPS의 SimPO(Meng·Xia·Chen)는 reference model 없이 <strong>토큰당 평균 로그확률</strong>을 implicit reward로 쓰고 preference margin을 추가했다.</p><p>2025년 ACL Findings의 MWPO(Xu 등)는 선호강도와 응답길이에 따라 preference pair의 가중치를 조정해 약한 선호·길이 편향을 다룬다.</p><p>각각의 개선 수치는 자체 실험의 benchmark 조건에서 해석해야 한다. <a href="https://papers.nips.cc/paper_files/paper/2024/hash/e099c1c9699814af0be873a175361713-Abstract-Conference.html" target="_blank" rel="noopener noreferrer">NeurIPS Papers</a></p></section><section><p class="chapter">14</p><h2>12. 왜 DPO 이후에도 온라인 RL이 연구되는가</h2><p>DPO는 대개 <strong>이미 수집된 offline 선호쌍</strong>을 사용한다.</p><p>그 데이터에 존재하지 않는 새로운 오류유형이나 긴 추론 경로를 탐색하고, 수학·코딩처럼 실행 가능한 외부 verifier의 점수를 이용해 새로운 trajectory를 반복 수집하려면 online exploration이 유용할 수 있다.</p><p>DPO의 “분류손실로 변환 가능”이라는 발견은 online RL이 항상 불필요하다는 결론이 아니다.</p><p>여기서 선택문제는 명확하다.</p><p>비교라벨이 풍부하고 비용을 낮춰 빠르게 정책을 맞춰야 하면 offline preference optimization이 매력적이다.</p><p>실행 검증 가능한 보상과 새로운 샘플의 탐색가치가 크면 online RL, rejection sampling, test-time search가 유리할 수 있다.</p><p>DPO는 학습 알고리즘의 <strong>한 선택지</strong>이지 선호학습 전체의 종착지가 아니다.</p></section><section><p class="chapter">15</p><h2>13. QA·데이터품질·인센티브 렌즈로 보면</h2><p>DPO를 소프트웨어 품질관리 관점에서 보면 선호 데이터셋은 일종의 <strong>테스트 오라클(test oracle)</strong> 이다.</p><p>“어떤 출력을 더 좋다고 보아야 하는가?”라는 판정 기준을 학습계에 제공하기 때문이다.</p><p>오라클이 잘못되면 최적화가 아무리 정확해도 잘못된 방향으로 정밀하게 진행된다.</p><p>금융업무 챗봇의 예를 들어 보자.</p><p>답변 A가 규정 조항을 인용하면서 적용일·예외를 명시하고, 답변 B가 간단하고 확신에 찬 말투로 결론만 제시한다.</p><p>평가자가 빠르게 훑으며 B를 택하면 모델은 <strong>정확한 규정 해석보다 자신감 있는 표현</strong>을 보상받는다.</p><p>이는 오류를 줄여야 할 시스템이 오히려 오류를 확신 있게 말하도록 만드는 역인센티브다.</p><p>따라서 선호 데이터 QA에는 정답 근거의 traceability, 현행 규정 버전, 경계사례, 평가자 간 일치도, 선택 이유, 답변 길이·톤의 교란효과, 시간에 따른 라벨 변화가 중요하다.</p><p>생성모델 평가는 하나의 win rate가 아니라 사실 정확성, 중요한 누락, 안전성, 간결성, 응답길이, 분포 이동과 사람이 실제로 의사결정에 사용할 때의 손실까지 나눠 측정해야 한다.</p><p>다른 분야와도 연결된다.</p><p>경제학적으로 선호 데이터는 대리목표(proxy)이며 Goodhart의 법칙에 취약하다.</p><p>통계적으로 pairwise 비교는 절대 점수의 불확실한 기준점을 제거하지만 비교대상 선택 편향을 남긴다.</p><p>의사결정 이론적으로는 평가자 의견이 갈릴 때 평균 선호만 최대화할지, 최악집단 피해를 제한할지의 목적함수 선택이 필요하다.</p><p><strong>오늘 기억할 한 문장:</strong> DPO는 보상을 버리는 기술이 아니라, <strong>기준정책 대비 로그확률비에 보상을 숨기고, 두 답변을 비교할 때 정규화상수가 사라지도록 만든 재매개변수화</strong>다. 단, 손실함수의 우아함이 선호 라벨의 타당성까지 보장하지는 않는다.</p></section><section><p class="chapter">16</p><h2>추가 학습 자료 — 정확히 3개</h2><p><strong>1. DPO Trainer — Hugging Face TRL 개발팀, 공식 문서(별도 발행일 미표기, 2026-10-07 확인).</strong> 가장 쉬운 실습 출발점이다. “Expected dataset type and format”, “Computing the loss”, “Logged metrics”를 읽어 prompt/chosen/rejected 구조와 실제 로그확률 계산을 확인하라. <strong>예상 20~30분.</strong> <a href="https://huggingface.co/docs/trl/dpo_trainer" target="_blank" rel="noopener noreferrer">Hugging Face</a></p><p><a href="https://huggingface.co/docs/trl/dpo_trainer?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">DPO Trainer — Hugging Face</a></p><p><strong>2. SimPO: Simple Preference Optimization with a Reference-Free Reward — Yu Meng, Mengzhou Xia, Danqi Chen, NeurIPS 2024(최초 arXiv 2024-05-23).</strong> DPO의 reference model 비용과 길이 편향을 어떻게 바꾸는지 비교할 자료다. 평균 토큰 로그확률과 target reward margin의 차이를 집중해서 보라. <strong>예상 35~45분.</strong> <a href="https://papers.nips.cc/paper_files/paper/2024/hash/e099c1c9699814af0be873a175361713-Abstract-Conference.html" target="_blank" rel="noopener noreferrer">NeurIPS Papers</a></p><p><a href="https://papers.nips.cc/paper_files/paper/2024/hash/e099c1c9699814af0be873a175361713-Abstract-Conference.html?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">SimPO — NeurIPS 2024</a></p><p><strong>3. MWPO: Enhancing LLMs Performance through Multi-Weight Preference Strength and Length Optimization — Shiyue Xu, Fu Zhang, Jingwei Cheng, Linfeng Zhou, Findings of ACL 2025(2025-07).</strong> 선호쌍의 비교가 애매하거나 답변 길이가 교란변수일 때 어떤 reweighting이 가능한지 살펴보는 후속연구다. “선호강도는 어떻게 추정하고, 가중치가 평가자의 편향까지 증폭하지 않게 하려면?”이라는 질문에 집중하라. <strong>예상 35~50분.</strong> <a href="https://aclanthology.org/2025.findings-acl.1057/" target="_blank" rel="noopener noreferrer">ACL Anthology</a></p><p><a href="https://aclanthology.org/2025.findings-acl.1057/?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">MWPO — ACL Anthology</a></p></section><section class="question-section"><p class="eyebrow">PAUSE & REFLECT</p><h2>잠깐, 내 언어로 설명해 보기</h2><details><summary><span>Q1.</span> 보상 \(r_A=3,r_B=1\)인 Bradley–Terry 모델에서 A 선호확률을 구하라. 두 보상에 각각 7을 더하면 선호확률은 어떻게 바뀌는가? 이것이 보상의 식별성과 어떤 관계인가?<small>해설 보기 +</small></summary><pre class="math-expression" aria-label="원문의 수식 표기">P(A\succ B)
+=
+\operatorname{sigmoid}(3-1)
+=
+\operatorname{sigmoid}(2)
+\approx0.881.</pre><p>둘 모두에 7을 더해도 차이는 2여서 확률은 그대로다.</p><p>비교자료만으로는 답변별 보상의 절대 영점을 결정할 수 없다.</p></details><details><summary><span>Q2.</span> 기준정책에서 \(\pi_{\mathrm{ref}}(A)=0.4,\pi_{\mathrm{ref}}(B)=0.2\), 학습정책에서 \(\pi_\theta(A)=0.3,\pi_\theta(B)=0.1\), \(\beta=1\)이라고 하자. A는 chosen이다. A의 절대확률이 줄었는데도 DPO margin이 증가했는지 계산하라. 나머지 응답확률은 합계가 1이 되도록 분배됐다고 가정한다.<small>해설 보기 +</small></summary><pre class="math-expression" aria-label="원문의 수식 표기">a(A)
+=
+\ln(0.3/0.4)
+=
+\ln0.75
+\approx-0.288.</pre><pre class="math-expression" aria-label="원문의 수식 표기">a(B)
+=
+\ln(0.1/0.2)
+=
+\ln0.5
+\approx-0.693.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\Delta
+=
+\ln(1.5)
+\approx0.405&gt;0.</pre><p>손실은</p><pre class="math-expression" aria-label="원문의 수식 표기">-\ln(\operatorname{sigmoid}(0.405))
+=
+-\ln0.6
+\approx0.511</pre><p>로 기준정책과 동일한 경우의 0.693보다 낮다.</p><p>A의 확률 자체는 0.4→0.3으로 감소했지만 B는 0.2→0.1로 더 크게 감소하여 <strong>상대적 선호는 개선</strong>됐다.</p></details><details><summary><span>Q3.</span> 금융 규정 QA 모델에 대해 사람 평가자가 “정확하지만 길고 조건이 많은 답변”보다 “짧고 단정적인 답변”을 70% 선택했다고 하자. DPO의 train loss와 preference win rate가 개선됐는데 실제 규정오답이 늘었다면 무엇이 실패한 것인가? 데이터·모델·평가 관점에서 각각 하나씩 개선안을 제시하라.<small>해설 보기 +</small></summary><p>데이터 차원에서는 평가자가 문장 길이·자신감에 영향을 받는 선호오라클 편향이 있다. 규정의 정확성·근거·예외표시를 별도로 라벨링하고 선택사유를 검수할 수 있다.</p><p>모델 차원에서는 preference loss만 쓰지 않고 근거 기반 SFT나 실행 가능한 검증기, 잘못된 확답에 대한 페널티를 결합할 수 있다.</p><p>평가 차원에서는 blind pairwise win rate와 별도로 날짜가 명시된 규정 사례의 factual error rate, 예외누락률, 근거 일치율을 독립적으로 측정한다.</p></details></section><section class="sources"><p class="eyebrow">READ FURTHER</p><h2>원고에 포함된 자료</h2><p class="source-date">원고에 기재된 출처를 보존했습니다. 아카이브 수록일에 자료를 다시 검증했다는 뜻은 아닙니다.</p><ol><li><a href="https://papers.neurips.cc/paper_files/paper/2023/hash/a85b405ed65c6477a4fe8302b5e06ce7-Abstract-Conference.html" target="_blank" rel="noopener noreferrer">NeurIPS Papers ↗</a><p>2026-10-07 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://papers.neurips.cc/paper_files/paper/2023/file/a85b405ed65c6477a4fe8302b5e06ce7-Paper-Conference.pdf?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">중심 원자료 — NeurIPS 2023 공식 PDF ↗</a><p>2026-10-07 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://arxiv.org/html/2305.18290v3?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">수식이 읽기 쉬운 HTML판 ↗</a><p>2026-10-07 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://huggingface.co/docs/trl/dpo_trainer" target="_blank" rel="noopener noreferrer">DPO Trainer — Hugging Face ↗</a><p>2026-10-07 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://papers.nips.cc/paper_files/paper/2024/hash/e099c1c9699814af0be873a175361713-Abstract-Conference.html" target="_blank" rel="noopener noreferrer">SimPO — NeurIPS 2024 ↗</a><p>2026-10-07 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://aclanthology.org/2025.findings-acl.1057/" target="_blank" rel="noopener noreferrer">MWPO — ACL Anthology ↗</a><p>2026-10-07 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li></ol></section></div><div class="back-bottom"><a href="../index.html#archive">← 다른 읽을거리 살펴보기</a><span>조금씩, 오래.</span></div></main><footer><a href="../index.html" class="brand"><svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M3 4h9c2 0 3 1 3 3v17c-1-2-3-3-6-3H3V4Zm22 0h-7v17h7V4Z" fill="currentColor"/></svg><span>매일의 발견</span></a><p>공개 학습 아카이브 · 시간대 Asia/Seoul</p><span>오래 남을 배움을 위해.</span></footer><script src="../reading.js" defer></script></body></html>

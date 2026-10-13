@@ -1,0 +1,352 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="CS·AI·금융공학과 관심사 인사이트. 배움이 쌓이는 공개 아카이브."><meta name="robots" content="noindex, nofollow"><title>Dupire local volatility: 옵션 표면에서 순간 변동성 지도를 역산하는 법 | 매일의 발견</title><link rel="icon" href="../favicon.svg"><link rel="stylesheet" href="../style.css"></head><body><a class="skip" href="#content">본문으로 이동</a><header class="site-header"><a href="../index.html" class="brand"><svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M3 4h9c2 0 3 1 3 3v17c-1-2-3-3-6-3H3V4Zm22 0h-7v17h7V4Z" fill="currentColor"/></svg><span>매일의 발견</span></a><nav aria-label="메뉴"><a href="../index.html#archive">아카이브</a></nav></header><div class="reading-progress" id="reading-progress"></div><main class="reading-main" id="content" data-article-id="2026-10-03-learning"><div class="reading-tools"><button id="article-save" aria-pressed="false">☆ 글 저장</button><button id="font-size" aria-pressed="false">가 +</button><button id="print">인쇄</button></div><div class="article-eyebrow">CS·AI·금융공학 <span> / </span> 금융공학</div><h1>Dupire local volatility: 옵션 표면에서 순간 변동성 지도를 역산하는 법</h1><p class="reading-summary">어제 Breeden–Litzenberger에서 같은 만기의 콜 가격을 행사가격 \(K\)로 두 번 미분하면 위험중립 상태밀도를 얻는다는 것을 봤다. 그렇다면 만기 \(T\) 방향의 변화까지 함께 보면, “미래 시점 \(T\)에 가격이 \(K\) 근처일 때 시장이 암묵적으로 요구하는 순간 변동성”까지 역산할 수 있을까?</p><div class="reading-meta"><time datetime="2026-10-03">2026.10.03</time><span>·</span><span>25분 읽기</span><span class="pill">읽을거리</span></div><div class="article-body"><section><p class="chapter">01</p><h2>아카이브 수록 안내</h2><p>원고 표기일: 2026-10-03 · 아카이브 게시일: 2026-10-13 (한국시간).</p><p>2026-10-03 · 26회차 · 금융공학</p><p>과거 원고의 본문·수식·문제·출처를 보존했습니다. 본문 속 오늘·최신·확인일은 당시 원고의 표현이며, 이번 수록에서 내용과 출처를 새로 검증했다는 뜻은 아닙니다. 개인정보와 발송 상태 등 비공개 안내는 제외했습니다.</p></section><section><p class="chapter">02</p><h2>핵심 질문과 결론</h2><p><strong>핵심 질문:</strong> 어제 Breeden–Litzenberger에서 같은 만기의 콜 가격을 행사가격 \(K\)로 두 번 미분하면 위험중립 상태밀도를 얻는다는 것을 봤다. 그렇다면 만기 \(T\) 방향의 변화까지 함께 보면, “미래 시점 \(T\)에 가격이 \(K\) 근처일 때 시장이 암묵적으로 요구하는 순간 변동성”까지 역산할 수 있을까? 그리고 이렇게 모든 유럽형 옵션가격을 정확히 맞춘 모델이 왜 barrier·forward-start 같은 경로의존 옵션까지 자동으로 정확하게 가격해 주지는 않을까?</p><p><strong>결론:</strong> 위험중립 하에서 주가가</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{dS_t}{S_t}
+=
+(r-\delta)dt
++
+\sigma_{\mathrm{loc}}(S_t,t)dW_t</pre><p>를 따르는 <strong>1차원 확산과정</strong>이라고 제한하면, 모든 strike와 maturity의 유럽형 콜 가격 표면 \(C(K,T)\)로부터 local volatility를 역산할 수 있다. 상수 \(r\)과 연속배당률 \(\delta\)에서 Dupire 공식은</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\sigma_{\mathrm{loc}}^2(K,T)
+=
+\frac{
+C_T +(r-\delta)K C_K+\delta C
+}{
+\frac12K^2C_{KK}
+}
+}</pre><p>이다.</p><p>특히</p><pre class="math-expression" aria-label="원문의 수식 표기">r=\delta=0</pre><p>이면</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\sigma_{\mathrm{loc}}^2(K,T)
+=
+\frac{2C_T}{K^2C_{KK}}
+}</pre><p>가 된다.</p><p>여기서 \(C_T\)는 만기를 조금 늘렸을 때 생기는 추가 time value이고, \(C_{KK}\)는 어제 본 위험중립 상태밀도와 연결된다. 따라서 local variance는 직관적으로 <strong>“\(K\) 근처 상태에 배정된 추가 시간가치 / \(K\) 근처 상태가격 질량”</strong>의 비율이다. 다만 이것은 시장이 실제로 그 변동성 경로를 믿는다는 뜻은 아니다. 유럽형 옵션이 주는 것은 주로 각 만기의 주변분포이고, local volatility는 그 주변분포들을 재현하는 특정한 Markov diffusion을 선택하는 방식이다.</p><p>오늘의 중심 원자료는 Bruno Dupire의 <strong>“Pricing with a Smile”</strong>이다. 원문은 *Risk* 1994년 1월호에 실렸고, 오늘 확인한 PDF는 *Risk*가 2007년 7월 “Classic from January 1994”로 재수록한 판이다. 오늘 <strong>2026-10-03 KST</strong>에 원문 전체를 직접 열어, 특히 risk-neutral density에서 diffusion coefficient를 역산하는 부분과 Black–Scholes PDE와 forward equation의 쌍대성을 설명하는 부분을 확인했다. <a href="https://www.risk.net/sites/default/files/import_unmanaged/risk.net/data/risk/pdf/technical/2007/risk20_0707_technical_volatility.pdf" target="_blank" rel="noopener noreferrer">Risk.net</a></p><p><a href="https://www.risk.net/sites/default/files/import_unmanaged/risk.net/data/risk/pdf/technical/2007/risk20_0707_technical_volatility.pdf?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">중심 원자료 — Bruno Dupire, Pricing with a Smile, Risk PDF</a></p></section><section><p class="chapter">03</p><h2>1. 어제의 결과에서 한 걸음만 더 가면 된다</h2><p>결정적 금리와 배당을 잠시 0으로 두자. 유럽형 콜 가격은</p><pre class="math-expression" aria-label="원문의 수식 표기">C(K,T)
+=
+E^Q[(S_T-K)^+]</pre><p>이고, 위험중립 밀도를 \(p(s,T)\)라고 쓰면</p><pre class="math-expression" aria-label="원문의 수식 표기">C(K,T)
+=
+\int_K^\infty (s-K)p(s,T)\,ds.</pre><p>Breeden–Litzenberger 관계는</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+C_{KK}(K,T)=p(K,T)
+}</pre><p>였다.</p><p>즉 strike 방향의 <strong>곡률</strong>은</p><blockquote>만기 \(T\)에서 가격이 \(K\) 근처에 있을 위험중립 질량</blockquote><p>을 알려 준다.</p><p>Dupire는 여기서 한 방향을 더 본다.</p><p>같은 \(K\)에서 maturity를 조금 늘렸을 때 콜 가격이 얼마나 증가하는지</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T
+=
+\frac{\partial C}{\partial T}</pre><p>를 본다.</p><p>중심 원문은 유럽형 옵션가격에서 얻은 위험중립 밀도와 Fokker–Planck 방정식을 연결해</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{b^2(K,T)}{2}
+C_{KK}
+=
+C_T</pre><p>를 얻고, \(b(K,T)=K\sigma_{\mathrm{loc}}(K,T)\)로 두어 diffusion coefficient를 역산한다. <a href="https://www.risk.net/sites/default/files/import_unmanaged/risk.net/data/risk/pdf/technical/2007/risk20_0707_technical_volatility.pdf" target="_blank" rel="noopener noreferrer">Risk.net</a></p></section><section><p class="chapter">04</p><h2>2. implied volatility와 local volatility는 전혀 다른 물건이다</h2><p>둘 다 이름에 volatility가 들어가서 자주 혼동된다.</p><p><strong>Implied volatility</strong> \(\sigma_{\mathrm{imp}}(K,T)\)는 시장의 옵션가격 하나를 Black–Scholes 공식에 넣어 역산한 숫자다.</p><pre class="math-expression" aria-label="원문의 수식 표기">C_{\mathrm{market}}(K,T)
+=
+C_{\mathrm{BS}}
+(S_0,K,T,r,\delta,\sigma_{\mathrm{imp}}).</pre><p>즉,</p><blockquote>“이 옵션 하나의 시장가격을 Black–Scholes가 맞추려면 상수 변동성을 몇 % 넣어야 하는가?”</blockquote><p>라는 가격의 재표현이다.</p><p>반면 <strong>local volatility</strong></p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma_{\mathrm{loc}}(S,t)</pre><p>는 모델의 실제 SDE 안에 들어가는 instantaneous volatility다.</p><pre class="math-expression" aria-label="원문의 수식 표기">dS_t
+=
+(r-\delta)S_tdt
++
+\sigma_{\mathrm{loc}}(S_t,t)S_tdW_t.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma_{\mathrm{imp}}(K,T)</pre><p>는 오늘의 vanilla 가격을 요약하는 숫자이고,</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma_{\mathrm{loc}}(S,t)</pre><p>는 미래의 특정 시간과 spot 상태에서 모델이 사용할 순간 변동성이다.</p><p>상수 Black–Scholes 세계에서는 둘이 같은 상수가 되지만, smile이 존재하면 일반적으로 같지 않다. Dupire의 출발점 자체가 “strike와 maturity에 따라 다른 implied volatility를 하나의 일관된 diffusion process로 설명할 수 있는가?”라는 문제였다. <a href="https://www.risk.net/sites/default/files/import_unmanaged/risk.net/data/risk/pdf/technical/2007/risk20_0707_technical_volatility.pdf" target="_blank" rel="noopener noreferrer">Risk.net</a></p></section><section><p class="chapter">05</p><h2>3. 선수개념 복습: Fokker–Planck는 확률질량 보존식이다</h2><p>확률과정</p><pre class="math-expression" aria-label="원문의 수식 표기">dS_t
+=
+a(S_t,t)dt
++
+b(S_t,t)dW_t</pre><p>의 밀도를 \(p(s,t)\)라고 하자.</p><p>Forward Kolmogorov, 즉 Fokker–Planck 방정식은</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{\partial p}{\partial t}
+=
+-\frac{\partial}{\partial s}
+[a(s,t)p(s,t)]
++
+\frac12
+\frac{\partial^2}{\partial s^2}
+[b^2(s,t)p(s,t)]</pre><p>이다.</p><p>이를 유체의 연속방정식처럼 생각하면 쉽다.</p><p>\(a\)는 확률질량을 이동시키고, \(b\)는 확률질량을 퍼뜨린다.</p><p>Zero-rate risk-neutral local-vol model에서는</p><pre class="math-expression" aria-label="원문의 수식 표기">a=0</pre><p>이고</p><pre class="math-expression" aria-label="원문의 수식 표기">b(s,t)=s\sigma_{\mathrm{loc}}(s,t)</pre><p>이므로</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+p_T
+=
+\frac12
+\frac{\partial^2}
+{\partial s^2}
+\left[
+s^2\sigma_{\mathrm{loc}}^2(s,t)p(s,t)
+\right]
+}</pre><p>가 된다.</p><p>이것은</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{local dynamics}
+\rightarrow
+\text{future density}</pre><p>를 계산하는 <strong>forward problem</strong>이다.</p><p>Dupire는 이 방향을 뒤집는다.</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{시장 옵션가격}
+\rightarrow
+\text{density}
+\rightarrow
+\text{local dynamics}.</pre><p>즉 전형적인 <strong>inverse problem</strong>이다.</p></section><section><p class="chapter">06</p><h2>4. Dupire 식을 직접 유도해보자</h2><p>다시</p><pre class="math-expression" aria-label="원문의 수식 표기">C(K,T)
+=
+\int_K^\infty(s-K)p(s,T)ds</pre><p>에서 시작한다.</p><p>\(T\)에 대해 미분하면</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T
+=
+\int_K^\infty
+(s-K)p_T(s,T)ds.</pre><p>Fokker–Planck를 넣으면</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T
+=
+\frac12
+\int_K^\infty
+(s-K)
+\frac{\partial^2}
+{\partial s^2}
+\left[
+s^2\sigma_{\mathrm{loc}}^2(s,T)p(s,T)
+\right]ds.</pre><p>여기서 두 번 부분적분하고 적절한 tail boundary term이 사라진다고 가정하면</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T
+=
+\frac12
+K^2
+\sigma_{\mathrm{loc}}^2(K,T)
+p(K,T).</pre><p>그런데 Breeden–Litzenberger에서</p><pre class="math-expression" aria-label="원문의 수식 표기">p(K,T)=C_{KK}(K,T)</pre><p>이므로</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T
+=
+\frac12
+K^2
+\sigma_{\mathrm{loc}}^2(K,T)
+C_{KK}.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\sigma_{\mathrm{loc}}^2(K,T)
+=
+\frac{2C_T}{K^2C_{KK}}
+}</pre><p>를 얻는다.</p><p>Dupire 원문은 이 forward equation이 Black–Scholes PDE와 형태상 쌍대적이라고 설명한다. Black–Scholes는 <strong>현재 spot \(S\)와 현재시간 \(t\)</strong> 방향으로 한 옵션의 가격을 움직이고, Dupire 방정식은 <strong>strike \(K\)와 maturity \(T\)</strong> 방향으로 오늘의 옵션표면 전체를 움직인다. <a href="https://www.risk.net/sites/default/files/import_unmanaged/risk.net/data/risk/pdf/technical/2007/risk20_0707_technical_volatility.pdf" target="_blank" rel="noopener noreferrer">Risk.net</a></p></section><section><p class="chapter">07</p><h2>5. 금리와 배당을 넣으면</h2><p>위험중립 주가가</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{dS_t}{S_t}
+=
+(r-\delta)dt
++
+\sigma_{\mathrm{loc}}(S_t,t)dW_t</pre><p>를 따른다고 하자.</p><p>여기서</p><pre class="math-expression" aria-label="원문의 수식 표기">r=\text{무위험금리},
+\qquad
+\delta=\text{연속배당률}</pre><p>이다.</p><p>Forward Dupire PDE는</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+C_T
+=
+\frac12
+\sigma_{\mathrm{loc}}^2(K,T)
+K^2C_{KK}
+-
+(r-\delta)KC_K
+-
+\delta C
+}</pre><p>가 되고,</p><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\sigma_{\mathrm{loc}}^2(K,T)
+=
+\frac{
+C_T
++
+(r-\delta)KC_K
++
+\delta C
+}{
+\frac12K^2C_{KK}
+}
+}</pre><p>가 된다.</p><p>중요한 점은 이 식의 모든 미분이</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{오늘 관찰하는 옵션가격 표면 }C(K,T)
+}</pre><p>에 대한 미분이라는 것이다.</p></section><section><p class="chapter">08</p><h2>6. 금융적으로 읽으면 ‘calendar / butterfly’다</h2><p>Emanuel Derman의 강의노트는 이 공식을 매우 좋은 직관으로 설명한다.</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T</pre><p>는 maturity를 아주 조금 늘리는 <strong>calendar spread</strong>의 가격을 단위시간으로 나눈 것과 연결된다.</p><p>반면</p><pre class="math-expression" aria-label="원문의 수식 표기">C_{KK}</pre><p>는</p><pre class="math-expression" aria-label="원문의 수식 표기">K-dK,\quad K,\quad K+dK</pre><p>세 strike의 콜로 만든 <strong>butterfly spread</strong>의 가격을 \(dK^2\)로 나눈 것과 연결된다. Derman은 그래서 local variance를 calendar-spread price와 butterfly-spread price의 비율로 해석할 수 있다고 설명한다. <a href="https://emanuelderman.com/wp-content/uploads/2013/09/smile-lecture7.pdf" target="_blank" rel="noopener noreferrer">Emanuel Derman</a></p><p>Zero-rate에서</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma_{\mathrm{loc}}^2(K,T)
+=
+\frac{2C_T}{K^2C_{KK}}</pre><p>이므로 직관적으로</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{local variance}
+\sim
+\frac{
+\text{그 상태에서 추가 시간이 만든 option value}
+}{
+\text{그 상태의 위험중립 질량}
+}
+}</pre><p>이다.</p><p>어제의 butterfly가 <strong>“어디에 확률질량이 있는가?”</strong>를 측정했다면, 오늘의 calendar 방향은 <strong>“그 상태에서 시간이 더 주어지면 얼마나 빨리 옵션가치가 만들어지는가?”</strong>를 측정한다.</p></section><section><p class="chapter">09</p><h2>7. 손계산: 가짜 옵션 표면에서 local vol 한 점을 복원하자</h2><p>다음 숫자는 전부 <strong>교육용 가정</strong>이며 실제 시장 관측치는 아니다.</p><pre class="math-expression" aria-label="원문의 수식 표기">r=\delta=0,
+\qquad
+K=100,
+\qquad
+T=0.5.</pre><p>\(T=0.5\)에서 strike별 콜 가격을</p><pre class="math-expression" aria-label="원문의 수식 표기">C(90,0.5)=13.20</pre><pre class="math-expression" aria-label="원문의 수식 표기">C(100,0.5)=7.00</pre><pre class="math-expression" aria-label="원문의 수식 표기">C(110,0.5)=3.20</pre><p>이라고 하자.</p><p>또 \(K=100\)에서 만기별 가격은</p><pre class="math-expression" aria-label="원문의 수식 표기">C(100,0.4)=6.50</pre><pre class="math-expression" aria-label="원문의 수식 표기">C(100,0.5)=7.00</pre><pre class="math-expression" aria-label="원문의 수식 표기">C(100,0.6)=7.50</pre><p>이라고 하자.</p><p>먼저 strike 방향 2차 미분을 \(h_K=10\)으로 중앙차분한다.</p><pre class="math-expression" aria-label="원문의 수식 표기">C_{KK}
+\approx
+\frac{
+C(90,0.5)
+-2C(100,0.5)
++C(110,0.5)
+}{10^2}</pre><pre class="math-expression" aria-label="원문의 수식 표기">=
+\frac{
+13.20-14.00+3.20
+}{100}</pre><pre class="math-expression" aria-label="원문의 수식 표기">=
+\frac{2.40}{100}
+=
+0.024.</pre><p>이제 maturity 방향 미분을 \(h_T=0.1\)로 중앙차분하면</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T
+\approx
+\frac{
+C(100,0.6)-C(100,0.4)
+}{0.2}</pre><pre class="math-expression" aria-label="원문의 수식 표기">=
+\frac{7.50-6.50}{0.2}
+=
+5.0.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma_{\mathrm{loc}}^2(100,0.5)
+\approx
+\frac{
+2(5.0)
+}{
+100^2(0.024)
+}</pre><pre class="math-expression" aria-label="원문의 수식 표기">=
+\frac{10}{240}
+=
+0.04167.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\sigma_{\mathrm{loc}}
+\approx20.4\%
+}</pre><p>다.</p><p>이 20.4%는</p><blockquote>“6개월 100-strike 옵션의 implied volatility가 20.4%다”</blockquote><p>라는 뜻이 아니다.</p><p>정확한 해석은</p><blockquote>“오늘의 전체 option surface를 1차원 Markov diffusion으로 설명한다는 가정 아래, 미래 시점 0.5년에 spot이 100인 상태에서 instantaneous volatility를 약 20.4%로 놓으면 이 주변의 maturity slope와 strike curvature에 부합한다.”</blockquote><p>이다.</p></section><section><p class="chapter">10</p><h2>8. 왜 local volatility surface는 implied-vol surface보다 훨씬 요동칠 수 있는가</h2><p>Dupire 식에는</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T,\quad C_K,\quad C_{KK}</pre><p>같은 미분량이 들어간다.</p><p>특히</p><pre class="math-expression" aria-label="원문의 수식 표기">C_{KK}</pre><p>는 2차 미분이다.</p><p>관측가격을</p><pre class="math-expression" aria-label="원문의 수식 표기">C_{\mathrm{obs}}
+=
+C_{\mathrm{true}}
++
+\varepsilon</pre><p>라고 하면 2차 중앙차분의 noise는</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{
+\varepsilon(K-h)
+-2\varepsilon(K)
++\varepsilon(K+h)
+}{h^2}</pre><p>로 들어간다.</p><p>\(h\)를 줄이면 strike 해상도는 좋아지지만 분모의</p><pre class="math-expression" aria-label="원문의 수식 표기">h^2</pre><p>때문에 quote noise가 빠르게 증폭된다.</p><p>더 심각한 곳은 deep tail이다.</p><p>그곳에서는</p><pre class="math-expression" aria-label="원문의 수식 표기">C_{KK}
+\approx0</pre><p>즉 위험중립 density 자체가 작다.</p><p>Dupire 식은 작은 denominator로 나누기 때문에 local vol이 폭발적으로 흔들릴 수 있다.</p><p>Derman의 Columbia 강의노트는 local-vol calibration을 명시적으로 <strong>ill-posed inverse problem</strong>이라고 설명하며, sparse implied-volatility data를 보간한 뒤 지나치게 세밀한 local-vol grid를 역산하면 작은 입력변화가 큰 출력변화로 이어질 수 있다고 지적한다. <a href="https://emanuelderman.com/wp-content/uploads/2013/09/smile-lecture7.pdf" target="_blank" rel="noopener noreferrer">Emanuel Derman</a></p><p>따라서 실무에서는 공식 자체보다 그 <strong>앞단의 표면 구성</strong>이 훨씬 중요할 수 있다.</p></section><section><p class="chapter">11</p><h2>9. 실무 파이프라인은 대체로 이렇게 생각해야 한다</h2><p>개념적으로는</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{raw quotes}</pre><p>에서 바로 Dupire 식으로 가지 않는다.</p><p>먼저</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{quote cleaning}</pre><p>을 하고,</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{forward / discount / dividend 정합}</pre><p>을 맞추고,</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{static-arbitrage-free smoothing}</pre><p>을 한 뒤,</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{differentiable option surface}</pre><p>를 만든다.</p><p>그 다음</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{Dupire differentiation}</pre><p>을 수행하고,</p><p>마지막으로</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{repricing validation}</pre><p>을 한다.</p><p>즉</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{가격 데이터 품질}
+\rightarrow
+\text{표면 품질}
+\rightarrow
+\text{미분 품질}
+\rightarrow
+\text{local-vol 품질}
+}</pre><p>이라는 연쇄다.</p></section><section><p class="chapter">12</p><h2>10. 정적 무차익 제약이 왜 먼저인가</h2><p>Breeden–Litzenberger에서</p><pre class="math-expression" aria-label="원문의 수식 표기">C_{KK}\ge0</pre><p>이어야 했다.</p><p>이는 butterfly arbitrage가 없어야 한다는 뜻이다.</p><p>또 zero-rate의 단순한 경우에는 적절한 조건 아래</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T\ge0</pre><p>여야 한다.</p><p>그래서</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma_{\mathrm{loc}}^2
+=
+\frac{2C_T}{K^2C_{KK}}</pre><p>에서 음수 local variance가 나오면</p><blockquote>“시장 변동성이 음수다”</blockquote><p>라고 해석할 것이 아니다.</p><p>먼저 의심할 것은</p><ul><li>stale quote</li><li>bid/ask noise</li><li>interpolation 오류</li><li>calendar arbitrage</li><li>butterfly arbitrage</li><li>배당 또는 금리 처리 오류</li></ul><p>다.</p><p>즉 금융공학에서는 종종</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{통계적 fitting보다 경제적 무결성 검사가 먼저다}
+}</pre><p>라는 원칙이 적용된다.</p></section><section><p class="chapter">13</p><h2>11. 왜 local vol은 오늘의 유럽형 옵션을 정확히 맞출 수 있는가</h2><p>모든 strike와 maturity의 European option prices를 안다고 하자.</p><p>그러면 각 \(T\)에서</p><pre class="math-expression" aria-label="원문의 수식 표기">p(s,T)</pre><p>라는 위험중립 density를 안다.</p><p>이제 모델 class를</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{1차원 risk-neutral diffusion}</pre><p>으로 제한하면, Fokker–Planck 방정식이 density evolution과 diffusion coefficient를 연결한다.</p><p>그래서 local volatility를 역산할 수 있다.</p><p>Black–Scholes는</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma=\text{constant}</pre><p>이고,</p><p>time-dependent volatility는</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma=\sigma(t)</pre><p>이며,</p><p>local volatility는</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma=\sigma(S,t)</pre><p>이다.</p><p>Dupire는 spot과 time의 함수 하나만으로 전체 European surface를 설명하려 한다. 원문도 바로 이 1-factor completeness를 주요 장점으로 강조한다. <a href="https://www.risk.net/sites/default/files/import_unmanaged/risk.net/data/risk/pdf/technical/2007/risk20_0707_technical_volatility.pdf" target="_blank" rel="noopener noreferrer">Risk.net</a></p></section><section><p class="chapter">14</p><h2>12. 그런데 왜 “시장의 진짜 동학”은 아니다</h2><p>이 부분이 오늘 가장 중요하다.</p><p>European option price at \(T\)는 기본적으로</p><pre class="math-expression" aria-label="원문의 수식 표기">S_T</pre><p>의 <strong>marginal distribution</strong>에 의존한다.</p><p>반면 barrier, lookback, cliquet, forward-start option은</p><pre class="math-expression" aria-label="원문의 수식 표기">S_t,\quad 0&lt;t&lt;T</pre><p>의 <strong>경로 전체</strong>에 의존한다.</p><p>서로 다른 stochastic processes가 같은 각 시점의 marginal distribution을 가질 수 있지만, path law는 다를 수 있다.</p><p>Dupire 원문도 European option prices는 여러 maturity의 terminal density를 주는 반면, path-dependent option prices는 full process에 관한 더 많은 정보를 담는다고 구분한다. <a href="https://www.risk.net/sites/default/files/import_unmanaged/risk.net/data/risk/pdf/technical/2007/risk20_0707_technical_volatility.pdf" target="_blank" rel="noopener noreferrer">Risk.net</a></p><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{vanilla exact fit}
+\neq
+\text{true dynamics identification}
+}</pre><p>이다.</p></section><section><p class="chapter">15</p><h2>13. 그림자 비유로 이해해보자</h2><p>각 maturity에서의 density를 물체의 그림자라고 생각하자.</p><p>우리는</p><pre class="math-expression" aria-label="원문의 수식 표기">p(s,T_1),
+\quad
+p(s,T_2),
+\quad
+p(s,T_3)</pre><p>를 안다.</p><p>즉 여러 시간에 찍은 그림자는 알고 있다.</p><p>하지만 그 사이에 확률질량이 <strong>어떤 경로로 이동했는지</strong>는 완전히 관찰하지 못한다.</p><p>Local volatility는</p><blockquote>이 그림자들을 모두 통과하는 하나의 단순한 Markov diffusion</blockquote><p>을 선택한다.</p><p>즉 calibration은</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{관측된 투영값을 맞춘다}</pre><p>는 것이지,</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{숨은 동학이 유일하게 식별됐다}</pre><p>는 뜻이 아니다.</p><p>머신러닝식으로 표현하면</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{training observable exact fit}
+\neq
+\text{latent process identification}
+}</pre><p>이다.</p></section><section><p class="chapter">16</p><h2>14. stochastic volatility와 무엇이 다른가</h2><p>Local-vol model에서는</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma_t
+=
+\sigma_{\mathrm{loc}}(S_t,t)</pre><p>다.</p><p>즉 spot과 time이 주어지면 미래 변동성이 결정된다.</p><p>Stochastic-volatility model에서는 variance 자체가 별도의 확률변수다.</p><p>개념적으로</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{dS_t}{S_t}
+=
+(r-\delta)dt
++
+\sqrt{V_t}dW_t^S</pre><pre class="math-expression" aria-label="원문의 수식 표기">dV_t
+=
+\cdots dt
++
+\cdots dW_t^V.</pre><p>현실에서는 volatility clustering, vol-of-vol, leverage effect가 존재하기 때문에 stochastic-vol dynamics가 더 현실적인 경우가 많다.</p><p>하지만 그 대가로</p><ul><li>추가 상태변수</li><li>추가 parameter</li><li>incomplete-market 요소</li><li>calibration cost</li></ul><p>가 생긴다.</p><p>Local volatility는 대신</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{오늘의 vanilla surface exact fit}
++
+\text{1-factor tractability}
+}</pre><p>를 선택한다.</p></section><section><p class="chapter">17</p><h2>15. 2022년 이후 흐름: Local-Stochastic Volatility로 결합한다</h2><p>현대 실무와 연구에서는 두 접근을 합친 <strong>Local-Stochastic Volatility, LSV</strong>가 중요하다.</p><p>개념적인 LSV를</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{dS_t}{S_t}
+=
+(r-\delta)dt
++
+L(S_t,t)\sqrt{V_t}dW_t</pre><p>라고 쓰자.</p><p>여기서</p><pre class="math-expression" aria-label="원문의 수식 표기">L(S,t)</pre><p>는 leverage function이고,</p><pre class="math-expression" aria-label="원문의 수식 표기">V_t</pre><p>는 stochastic variance다.</p><p>Vanilla marginal을 Dupire local volatility에 맞추려면 대표적으로</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\sigma_{\mathrm{loc}}^2(s,t)
+=
+L^2(s,t)
+E[V_t\mid S_t=s]
+}</pre><p>라는 projection 관계가 나온다.</p><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+L^2(s,t)
+=
+\frac{
+\sigma_{\mathrm{loc}}^2(s,t)
+}{
+E[V_t\mid S_t=s]
+}
+}</pre><p>가 된다.</p><p>즉 Dupire local vol은 stochastic-volatility 시대에 폐기되는 것이 아니다.</p><p>오히려</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{복잡한 동학을 vanilla surface에 맞추는 calibration target}
+}</pre><p>으로 남는다.</p></section><section><p class="chapter">18</p><h2>16. 2026년 흐름: calibration 자체를 amortize한다</h2><p>2026-08-02 공개된 preprint <strong>“Amortizing the Calibration Triple: A Projection-Consistent Neural Operator for Local-Stochastic Volatility”</strong>는 이 문제를 최신 ML 방법과 연결한다.</p><p>LSV calibration은</p><pre class="math-expression" aria-label="원문의 수식 표기">E[V_t\mid S_t=s]</pre><p>를 반복적으로 추정하면서 leverage function을 갱신해야 하므로 계산량과 Monte Carlo noise가 크다.</p><p>저자들은 neural operator가</p><ul><li>implied-volatility surface</li><li>Dupire local volatility</li><li>LSV leverage</li><li>conditional moment</li></ul><p>를 함께 산출하도록 만들고, quote fit뿐 아니라 static-arbitrage condition, Dupire relation, projection identity까지 학습 제약에 포함한다.</p><p>논문은 통제된 synthetic experiment에서 calibration latency를 <strong>98.5 ms에서 0.6 ms</strong>로 낮췄고, 비교한 baseline 대비 local-vol RMSE를 36%, leverage RMSE를 7–16% 낮췄다고 보고한다. 이는 특정 synthetic setup과 baseline에서 나온 <strong>preprint 연구결과</strong>이며 실제 거래성과나 모든 시장에서의 일반적 우위를 뜻하지 않는다. <a href="https://arxiv.org/abs/2608.01217?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>흥미로운 점은 AI가 Dupire를 없애는 것이 아니라는 것이다.</p><p>오히려</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{PDE}
++
+\text{무차익 조건}
++
+\text{projection identity}
+}</pre><p>를 neural model 안에 넣는다.</p><p>즉 최근의 흐름은</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{수학을 버리고 AI로 대체}</pre><p>보다는</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{금융구조를 AI의 제약조건으로 내장}
+}</pre><p>에 더 가깝다.</p></section><section><p class="chapter">19</p><h2>17. 반대 관점과 한계</h2><p>Local volatility에는 분명한 약점이 있다.</p><p>첫째, <strong>표면 미분의 불안정성</strong>이다. Sparse strikes, stale quote, bid–ask noise, tail extrapolation이 \(C_T\)와 \(C_{KK}\)를 흔든다.</p><p>둘째, <strong>stochastic rates와 dividends</strong>다. 단순 Dupire 식은 결정적 금리와 배당구조를 가정한다.</p><p>셋째, <strong>jumps</strong>다. 실제 price path에 jump가 있다면 continuous diffusion은 같은 vanilla marginal을 맞추더라도 path behavior를 왜곡할 수 있다.</p><p>넷째, <strong>forward smile dynamics</strong>다. 오늘 surface를 정확히 맞추는 것과 내일 surface가 어떻게 움직일지를 맞추는 것은 별개의 문제다.</p><p>다섯째, <strong>tail identification</strong>이다. 거래되는 strike 바깥에서는 local vol이 extrapolation assumption에 매우 민감하다.</p><p>여섯째, 가장 위험한 것은 <strong>exact fit의 심리적 함정</strong>이다.</p><p>Calibration error가 거의 0이면 모델이 현실을 “맞혔다”고 느끼기 쉽다.</p><p>하지만 실제로 맞춘 것은</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{선택한 관측상품들의 오늘 가격}
+}</pre><p>일 뿐이다.</p></section><section><p class="chapter">20</p><h2>18. 무엇을 검증해야 하나</h2><p>Local-vol pipeline을 실제로 만든다면 최소한 다음을 확인해야 한다.</p><p>첫째, 입력 surface에 butterfly·calendar arbitrage가 없는가.</p><p>둘째,</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma_{\mathrm{loc}}^2&lt;0</pre><p>이거나 특정 tail에서 폭발하지 않는가.</p><p>셋째, 계산한 local-vol surface로 PDE나 Monte Carlo를 다시 돌렸을 때 calibration 대상 vanilla prices를 재현하는가.</p><p>넷째, bid와 ask 사이에서 quote를 조금만 바꿔도 local vol이 크게 변하지 않는가.</p><p>다섯째, calibration에 쓰지 않은 barrier·forward-start·cliquet에서 모델 간 가격차가 얼마나 발생하는가.</p><p>핵심은</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{fit validation}
+\neq
+\text{model validation}
+}</pre><p>이다.</p></section><section><p class="chapter">21</p><h2>19. 시스템 렌즈: Dupire는 forward model의 역함수다</h2><p>Fokker–Planck는</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{local dynamics}
+\rightarrow
+\text{future density}</pre><p>를 계산한다.</p><p>Dupire는</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{option surface}
+\rightarrow
+\text{density derivatives}
+\rightarrow
+\text{local dynamics}</pre><p>로 뒤집는다.</p><p>Forward map이 smoothing을 하면 inverse map은 보통 noise를 증폭한다.</p><p>CT reconstruction, inverse heat equation, 신호복원 문제에서도 똑같다.</p><p>그래서 inverse problem에는 자주</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{regularization}
+}</pre><p>이 필요하다.</p><p><strong>정확한 수식이 존재한다는 것</strong>과 <strong>시장 데이터에서 안정적으로 역산할 수 있다는 것</strong>은 전혀 다른 문제다.</p></section><section><p class="chapter">22</p><h2>20. 데이터 품질 렌즈: 작은 원천 오류가 파생지표에서 증폭된다</h2><p>옵션가격의 작은 오차는 원시가격 단계에서는 별일 아닌 것처럼 보일 수 있다.</p><p>하지만 local-vol 계산은</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{1차 미분}
+\rightarrow
+\text{2차 미분}
+\rightarrow
+\text{나눗셈}</pre><p>을 거친다.</p><p>즉 작은 source-data error가 downstream에서 크게 확대될 수 있다.</p><p>데이터품질에서도 익숙한 현상이다.</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{작은 원천 오류}
+\times
+\text{민감한 변환}
+=
+\text{큰 의사결정 오류}
+}</pre><p>다.</p><p>따라서 복잡한 calibration algorithm을 고치기 전에 raw quote와 surface integrity를 먼저 개선하는 것이 더 큰 효과를 줄 수 있다.</p></section><section><p class="chapter">23</p><h2>21. 의사결정 렌즈: “정확히 맞춘다”의 범위를 물어야 한다</h2><p>모델이</p><blockquote>“market을 exactly calibrate한다”</blockquote><p>고 하면 반드시 다음 질문을 해야 한다.</p><p>정확히 무엇을 맞추는가?</p><p>오늘의 vanilla prices인가?</p><p>오늘의 implied-volatility surface인가?</p><p>내일 smile의 움직임인가?</p><p>Barrier hitting probability인가?</p><p>Hedging P&amp;L인가?</p><p>Dupire local vol은 첫 번째와 두 번째 질문에는 강하다.</p><p>하지만 그 성공을 나머지 문제에 자동으로 확장하면 모델 리스크가 생긴다.</p><p>투자에서도 마찬가지다.</p><p>과거 EPS를 완벽히 설명하는 모델이 미래 cash flow를 맞힌다는 보장은 없다.</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{fit target}
+\text{과}
+\text{decision target}
+\text{을 분리해야 한다.}
+}</pre></section><section><p class="chapter">24</p><h2>22. 인센티브 렌즈: calibration KPI가 목적함수를 대체할 수 있다</h2><p>Quant team의 KPI가</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{vanilla pricing RMSE}</pre><p>하나라면 오늘 surface를 아주 정밀하게 맞추는 모델이 높은 평가를 받는다.</p><p>하지만 exotic desk의 진짜 목적은</p><ul><li>hedge stability</li><li>forward dynamics</li><li>tail robustness</li><li>execution speed</li><li>stress behavior</li></ul><p>일 수 있다.</p><p>측정하기 쉬운 calibration metric이 최종 목적을 대체하면 Goodhart 문제가 생긴다.</p><p>그래서 좋은 모델 거버넌스는</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{calibration fit}
++
+\text{out-of-sample hedge}
++
+\text{stress stability}
+}</pre><p>를 함께 본다.</p></section><section><p class="chapter">25</p><h2>오늘 기억할 한 문장</h2><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{Breeden–Litzenberger가 옵션곡선의 곡률에서
+“어디에 확률질량이 있는가”를 읽는다면,
+Dupire는 만기방향의 변화까지 더해
+“그 상태에서 얼마나 빠르게 확률이 퍼져야 하는가”를 역산한다.}
+}</pre><p>핵심식은</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\sigma_{\mathrm{loc}}^2(K,T)
+=
+\frac{
+C_T
++
+(r-\delta)KC_K
++
+\delta C
+}{
+\frac12K^2C_{KK}
+}
+}</pre><p>이다.</p><p>그러나 더 중요한 모델링 교훈은</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{오늘의 관측가격을 완벽히 재현하는 것과
+미래의 실제 동학을 식별하는 것은 다른 문제다.}
+}</pre><p>이다.</p></section><section><p class="chapter">26</p><h2>추가 학습 자료 — 정확히 3개</h2><p><strong>1. “Lecture 7: Local Volatility Continued” — Emanuel Derman / Columbia University, 2008-03-27.</strong> 오늘 수식을 가장 직관적으로 다시 보기 좋은 강의노트다. §7.3의 inverse-problem 설명, §7.4의 Dupire equation, §7.4.1의 calendar-spread / butterfly-spread 해석에 집중하라. 핵심 질문은 <strong>“왜 local variance를 calendar/butterfly 비율로 볼 수 있는가?”</strong>다. 예상 학습시간은 <strong>30~40분</strong>이다. <a href="https://emanuelderman.com/wp-content/uploads/2013/09/smile-lecture7.pdf" target="_blank" rel="noopener noreferrer">Emanuel Derman</a>  <br><a href="https://emanuelderman.com/wp-content/uploads/2013/09/smile-lecture7.pdf?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Emanuel Derman — Lecture 7: Local Volatility Continued PDF</a></p><p><strong>2. “The Volatility Smile and Its Implied Tree” / “Riding on a Smile” — Emanuel Derman &amp; Iraj Kani / Goldman Sachs Quantitative Strategies, 1994-02-01.</strong> Dupire의 연속시간 접근과 같은 문제를 discrete implied tree에서 바라보는 고전적 짝이다. Implied-tree construction과 forward-equation 관점을 보고 <strong>“연속시간 local vol과 discrete implied tree가 같은 시장정보를 어떻게 다른 방식으로 표현하는가?”</strong>를 생각하라. 예상 학습시간은 <strong>35~50분</strong>이다. <a href="https://emanuelderman.com/the-volatility-smile-and-its-implied-tree/?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Emanuel Derman</a>  <br><a href="https://emanuelderman.com/the-volatility-smile-and-its-implied-tree/?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Derman &amp; Kani — The Volatility Smile and Its Implied Tree</a></p><p><strong>3. “Amortizing the Calibration Triple: A Projection-Consistent Neural Operator for Local-Stochastic Volatility” — Xiaozhen Wang, Anaïs Després, Martin Dureau, Francois Buet-Golfouse, 2026-08-02.</strong> 오늘의 Dupire local vol이 2026년 LSV·neural-operator calibration에서 어떤 제약조건으로 살아남는지 보여주는 최신 후속자료다. Abstract와 Dupire residual, projection identity에 집중하고 <strong>“AI가 수식을 대체하는가, 아니면 수식을 제약으로 내장해 inverse problem을 amortize하는가?”</strong>를 질문하라. 예상 학습시간은 <strong>40~55분</strong>이다. <a href="https://arxiv.org/abs/2608.01217?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">arXiv</a>  <br><a href="https://arxiv.org/abs/2608.01217?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Amortizing the Calibration Triple — arXiv</a></p></section><section class="question-section"><p class="eyebrow">PAUSE & REFLECT</p><h2>잠깐, 내 언어로 설명해 보기</h2><div class="question-item"><h3>Q1.</h3><p>Zero-rate, no-dividend 환경에서</p><pre class="math-expression" aria-label="원문의 수식 표기">C(K,T)
+=
+\int_K^\infty
+(s-K)p(s,T)ds</pre><p>이고</p><pre class="math-expression" aria-label="원문의 수식 표기">p_T
+=
+\frac12
+\partial_{ss}
+\left[
+s^2\sigma_{\mathrm{loc}}^2(s,T)p(s,T)
+\right]</pre><p>라고 하자.</p><p>1. Breeden–Litzenberger 관계를 쓰라.<br>2. \(C\)를 \(T\)로 미분하고 Fokker–Planck를 대입하라.<br>3. 결과가</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T
+=
+\frac12
+K^2\sigma_{\mathrm{loc}}^2
+C_{KK}</pre><p>일 때 Dupire 식을 구하라.</p><details><summary>해설 보기 +</summary><p>Breeden–Litzenberger에서</p><pre class="math-expression" aria-label="원문의 수식 표기">C_{KK}(K,T)=p(K,T).</pre><p>또</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T
+=
+\int_K^\infty
+(s-K)p_T(s,T)ds.</pre><p>Fokker–Planck를 대입하고 두 번 부분적분하면</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T
+=
+\frac12
+K^2
+\sigma_{\mathrm{loc}}^2(K,T)
+p(K,T).</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T
+=
+\frac12
+K^2
+\sigma_{\mathrm{loc}}^2
+C_{KK}.</pre><p>그러므로</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\sigma_{\mathrm{loc}}^2(K,T)
+=
+\frac{2C_T}{K^2C_{KK}}
+}</pre><p>이다.</p></details></div><div class="question-item"><h3>Q2.</h3><p>다음은 <strong>교육용 가정</strong>이다.</p><pre class="math-expression" aria-label="원문의 수식 표기">K=100,\qquad
+r=\delta=0.</pre><pre class="math-expression" aria-label="원문의 수식 표기">C(90,1.0)=15.0</pre><pre class="math-expression" aria-label="원문의 수식 표기">C(100,1.0)=9.0</pre><pre class="math-expression" aria-label="원문의 수식 표기">C(110,1.0)=5.0.</pre><p>또</p><pre class="math-expression" aria-label="원문의 수식 표기">C(100,0.9)=8.6</pre><pre class="math-expression" aria-label="원문의 수식 표기">C(100,1.1)=9.4</pre><p>라고 하자.</p><p>1. \(h_K=10\)에서 \(C_{KK}\)를 구하라.<br>2. \(h_T=0.1\)에서 \(C_T\)를 구하라.<br>3. \(\sigma_{\mathrm{loc}}(100,1.0)\)을 계산하라.</p><details><summary>해설 보기 +</summary><p>먼저</p><pre class="math-expression" aria-label="원문의 수식 표기">C_{KK}
+\approx
+\frac{
+15-2(9)+5
+}{
+100
+}</pre><pre class="math-expression" aria-label="원문의 수식 표기">=
+\frac{2}{100}
+=
+0.02.</pre><p>다음으로</p><pre class="math-expression" aria-label="원문의 수식 표기">C_T
+\approx
+\frac{9.4-8.6}{0.2}
+=
+4.0.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma_{\mathrm{loc}}^2
+=
+\frac{
+2(4)
+}{
+10000(0.02)
+}</pre><pre class="math-expression" aria-label="원문의 수식 표기">=
+\frac{8}{200}
+=
+0.04.</pre><p>그러므로</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\sigma_{\mathrm{loc}}=20\%
+}</pre><p>이다.</p></details></div><div class="question-item"><h3>Q3.</h3><p>두 모델 A와 B가 오늘 거래되는 모든 European call과 put을 bid–ask 안에서 똑같이 맞춘다고 하자.</p><p>A는 local-vol diffusion이고,</p><p>B는 stochastic-volatility model이다.</p><p>1. 두 모델의 barrier option 가격도 반드시 같은가?<br>2. 같지 않을 수 있다면 vanilla surface에 빠져 있는 정보는 무엇인가?<br>3. “perfect calibration”이 “true dynamics identification”을 뜻하지 않는 이유를 설명하라.</p><details><summary>해설 보기 +</summary><p>반드시 같지 않다.</p><p>Vanilla option은 주로 각 maturity의 terminal marginal distribution을 제약한다.</p><p>Barrier option은 중간 경로에서 barrier를 방문했는지에 의존하므로 path distribution이 중요하다.</p><p>Local vol과 stochastic vol이 동일한 vanilla prices를 맞추더라도</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{spot-vol correlation}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{vol-of-vol}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{conditional future variance}</pre><pre class="math-expression" aria-label="원문의 수식 표기">\text{path transition structure}</pre><p>가 다르면 barrier·forward-start 가격이 달라질 수 있다.</p><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{동일한 marginal fit}
+\neq
+\text{동일한 path law}
+}</pre><p>이다.</p></details></div></section><section class="sources"><p class="eyebrow">READ FURTHER</p><h2>원고에 포함된 자료</h2><p class="source-date">원고에 기재된 출처를 보존했습니다. 아카이브 수록일에 자료를 다시 검증했다는 뜻은 아닙니다.</p><ol><li><a href="https://www.risk.net/sites/default/files/import_unmanaged/risk.net/data/risk/pdf/technical/2007/risk20_0707_technical_volatility.pdf" target="_blank" rel="noopener noreferrer">중심 원자료 — Bruno Dupire, Pricing with a Smile, Risk PDF ↗</a><p>2026-10-03 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://emanuelderman.com/wp-content/uploads/2013/09/smile-lecture7.pdf" target="_blank" rel="noopener noreferrer">Emanuel Derman — Lecture 7: Local Volatility Continued PDF ↗</a><p>2026-10-03 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://arxiv.org/abs/2608.01217?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Amortizing the Calibration Triple — arXiv ↗</a><p>2026-10-03 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://emanuelderman.com/the-volatility-smile-and-its-implied-tree/?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Derman &amp; Kani — The Volatility Smile and Its Implied Tree ↗</a><p>2026-10-03 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li></ol></section></div><div class="back-bottom"><a href="../index.html#archive">← 다른 읽을거리 살펴보기</a><span>조금씩, 오래.</span></div></main><footer><a href="../index.html" class="brand"><svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M3 4h9c2 0 3 1 3 3v17c-1-2-3-3-6-3H3V4Zm22 0h-7v17h7V4Z" fill="currentColor"/></svg><span>매일의 발견</span></a><p>공개 학습 아카이브 · 시간대 Asia/Seoul</p><span>오래 남을 배움을 위해.</span></footer><script src="../reading.js" defer></script></body></html>

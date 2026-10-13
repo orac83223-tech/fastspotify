@@ -1,0 +1,183 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="CS·AI·금융공학과 관심사 인사이트. 배움이 쌓이는 공개 아카이브."><meta name="robots" content="noindex, nofollow"><title>Rough Volatility: 왜 변동성은 Brownian motion보다 훨씬 거칠고, 짧은 만기 옵션의 skew는 급해지는가 | 매일의 발견</title><link rel="icon" href="../favicon.svg"><link rel="stylesheet" href="../style.css"></head><body><a class="skip" href="#content">본문으로 이동</a><header class="site-header"><a href="../index.html" class="brand"><svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M3 4h9c2 0 3 1 3 3v17c-1-2-3-3-6-3H3V4Zm22 0h-7v17h7V4Z" fill="currentColor"/></svg><span>매일의 발견</span></a><nav aria-label="메뉴"><a href="../index.html#archive">아카이브</a></nav></header><div class="reading-progress" id="reading-progress"></div><main class="reading-main" id="content" data-article-id="2026-10-06-learning"><div class="reading-tools"><button id="article-save" aria-pressed="false">☆ 글 저장</button><button id="font-size" aria-pressed="false">가 +</button><button id="print">인쇄</button></div><div class="article-eyebrow">CS·AI·금융공학 <span> / </span> 금융공학</div><h1>Rough Volatility: 왜 변동성은 Brownian motion보다 훨씬 거칠고, 짧은 만기 옵션의 skew는 급해지는가</h1><p class="reading-summary">Black–Scholes에서는 변동성이 상수이고, Dupire에서는 spot과 시간의 함수이며, Heston에서는 variance 자체가 Brownian noise로 움직인다. 그런데 실제 변동성은 이보다 훨씬 더 들쭉날쭉할 수 있다는 rough volatility 가설은 정확히 무엇을 뜻할까?</p><div class="reading-meta"><time datetime="2026-10-06">2026.10.06</time><span>·</span><span>25분 읽기</span><span class="pill">읽을거리</span></div><div class="article-body"><section><p class="chapter">01</p><h2>아카이브 수록 안내</h2><p>원고 표기일: 2026-10-06 · 아카이브 게시일: 2026-10-13 (한국시간).</p><p>2026-10-06 · 29회차 · 금융공학</p><p>과거 원고의 본문·수식·문제·출처를 보존했습니다. 본문 속 오늘·최신·확인일은 당시 원고의 표현이며, 이번 수록에서 내용과 출처를 새로 검증했다는 뜻은 아닙니다. 개인정보와 발송 상태 등 비공개 안내는 제외했습니다.</p></section><section><p class="chapter">02</p><h2>핵심 질문과 결론</h2><p><strong>핵심 질문:</strong> Black–Scholes에서는 변동성이 상수이고, Dupire에서는 spot과 시간의 함수이며, Heston에서는 variance 자체가 Brownian noise로 움직인다. 그런데 실제 변동성은 이보다 훨씬 더 들쭉날쭉할 수 있다는 <strong>rough volatility</strong> 가설은 정확히 무엇을 뜻할까? Hurst exponent \(H\approx0.1\)은 어떤 통계량에서 나오며, 왜 이것이 짧은 만기의 implied-volatility skew가 가파른 현상과 연결될까? 그리고 roughness를 발견했다고 해서 실제확률 \(P\)와 위험중립확률 \(Q\)에서 같은 dynamics를 써도 되는 것은 왜 아닐까?</p><p><strong>결론:</strong> fractional Brownian motion(fBM)의 Hurst exponent \(H\)는 경로의 local regularity를 나타내는 scaling exponent다. 표준 Brownian motion은 \(H=1/2\)인데, Gatheral·Jaisson·Rosenbaum은 DAX, Bund, S&amp;P, NASDAQ 등의 log-volatility increment가 대략</p><pre class="math-expression" aria-label="원문의 수식 표기">E\left[
+|\log\sigma_{t+\Delta}-\log\sigma_t|^q
+\right]
+\propto
+\Delta^{qH}</pre><p>형태의 scaling을 보이며 \(H\)가 대체로 0.1 안팎이라고 보고했다. \(H&lt;1/2\)이면 volatility path는 Brownian motion보다 훨씬 거칠고, 가까운 increment는 오히려 음의 상관을 가진다. 동시에 rough-volatility 계열에서는 짧은 만기의 ATM skew가</p><pre class="math-expression" aria-label="원문의 수식 표기">\psi(\tau)\sim\tau^{H-1/2}</pre><p>처럼 움직일 수 있으므로 \(H=0.1\)이면 \(\tau^{-0.4}\)의 급한 short-end skew를 자연스럽게 만들 수 있다. 다만 원논문의 roughness 추정은 주로 실제 시계열, 즉 \(P\) 측도에서의 결과다. 옵션가격은 \(Q\) 측도에서 결정되므로, \(P\)에서의 roughness를 곧바로 옵션가격 dynamics로 옮기는 것은 별도의 가정이다. <a href="https://arxiv.org/pdf/1410.3394" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>오늘의 중심 원자료는 Jim Gatheral, Thibault Jaisson, Mathieu Rosenbaum의 <strong>“Volatility is rough”</strong>다. arXiv 최초 공개는 2014-10-13이고, 이후 *Quantitative Finance* 18(6)에 2018년 게재됐다. 오늘 2026-10-06 KST에 arXiv 원문 PDF의 §1.1~1.4, §2의 scaling 추정, §3.1의 RFSV 모형, 결론부를 직접 확인했다. <a href="https://arxiv.org/pdf/1410.3394" target="_blank" rel="noopener noreferrer">arXiv</a></p><p><a href="https://arxiv.org/abs/1410.3394?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">중심 원자료 — Volatility is rough, arXiv</a></p></section><section><p class="chapter">03</p><h2>1. Dupire 다음에 왜 rough volatility가 나오는가</h2><p>Black–Scholes는 변동성을 상수 또는 결정적 시간함수로 둔다. Dupire local volatility는</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma_{\mathrm{loc}}(S,t)</pre><p>처럼 spot과 시간에 따라 변동성을 바꾸어 오늘의 vanilla option surface를 정확히 맞춘다. 반면 전통적 stochastic-volatility model은 변동성 자체를 확률과정으로 둔다. 대표적인 Heston류에서는 variance가 Brownian motion에 의해 움직인다.</p><p>Gatheral 등은 여기서 한 단계 더 근본적인 질문을 던진다.</p><blockquote>변동성의 경로가 애초에 Brownian motion보다 훨씬 덜 매끄럽다면?</blockquote><p>원논문은 local volatility가 오늘의 European option price를 정확히 맞출 수 있지만 future volatility-surface dynamics가 현실과 다를 수 있다고 지적하고, 반대로 전통적인 stochastic-volatility model은 dynamics는 더 자연스럽지만 관측된 전체 surface를 정확히 맞추기 어렵다는 긴장을 출발점으로 삼는다. <a href="https://arxiv.org/pdf/1410.3394" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>이 관점에서 rough volatility는 단순히 “Heston에 parameter 하나 추가”가 아니다. <strong>변동성 경로 자체의 정규성 가정을 바꾸는 것</strong>이다.</p></section><section><p class="chapter">04</p><h2>2. fractional Brownian motion과 Hurst exponent</h2><p>fractional Brownian motion \(W_t^H\)는 평균 0인 Gaussian process이고 covariance가</p><pre class="math-expression" aria-label="원문의 수식 표기">E[W_t^H W_s^H]
+=
+\frac12
+\left(
+t^{2H}+s^{2H}-|t-s|^{2H}
+\right)</pre><p>인 과정이다.</p><p>가장 중요한 성질은 increment의 scaling이다.</p><pre class="math-expression" aria-label="원문의 수식 표기">E\left[
+|W_{t+\Delta}^H-W_t^H|^q
+\right]
+=
+K_q\Delta^{qH}.</pre><p>여기서 \(K_q\)는 표준정규변수 절댓값의 \(q\)차 moment다. 원논문도 바로 이 scaling relation을 roughness 측정의 출발점으로 쓴다. <a href="https://arxiv.org/pdf/1410.3394" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>\(H=1/2\)이면 표준 Brownian motion이다. \(H&gt;1/2\)이면 increment가 양의 상관을 보이며 더 매끈하고 persistence가 강하다. 반대로 \(H&lt;1/2\)이면 경로가 더 거칠고 가까운 increment는 anti-persistent하다.</p><p>따라서 \(H\)를 “장기기억 정도” 하나로만 해석하면 안 된다. 더 근본적인 의미는 <strong>시간척도를 줄였을 때 fluctuation 크기가 얼마나 빨리 줄어드는가</strong>다.</p></section><section><p class="chapter">05</p><h2>3. 손계산: \(H=0.1\)은 얼마나 거친가</h2><p>표준편차 규모는 대략</p><pre class="math-expression" aria-label="원문의 수식 표기">\operatorname{Std}
+(W_{t+\Delta}^H-W_t^H)
+\propto
+\Delta^H</pre><p>다.</p><p>시간척도를 1에서 \(1/16\)으로 줄이자.</p><p>Brownian motion에서는 \(H=1/2\)이므로</p><pre class="math-expression" aria-label="원문의 수식 표기">(1/16)^{1/2}
+=
+1/4
+=
+0.25.</pre><p>즉 시간창이 16분의 1이 되면 typical fluctuation도 4분의 1로 줄어든다.</p><p>그런데 \(H=0.1\)이면</p><pre class="math-expression" aria-label="원문의 수식 표기">(1/16)^{0.1}
+\approx0.758.</pre><p>시간창을 16분의 1로 줄였는데도 fluctuation scale이 원래의 약 76%나 남는다.</p><p>그래서 rough path는 확대할수록 작은 흔들림이 빠르게 사라지는 대신, <strong>미세한 시간척도에서도 큰 불규칙성이 계속 보인다.</strong></p><p>이게 “rough”의 직관이다.</p></section><section><p class="chapter">06</p><h2>4. 원논문은 \(H\)를 어떻게 추정했나</h2><p>실제 spot volatility \(\sigma_t\)는 직접 관측할 수 없다. 원논문은 high-frequency data와 realized variance proxy를 사용해 log-volatility increment의 empirical moment를 계산했다.</p><p>개념적으로</p><pre class="math-expression" aria-label="원문의 수식 표기">m(q,\Delta)
+=
+\frac1N
+\sum_t
+\left|
+\log\sigma_{t+\Delta}
+-
+\log\sigma_t
+\right|^q.</pre><p>fBM형 scaling이 맞다면</p><pre class="math-expression" aria-label="원문의 수식 표기">m(q,\Delta)
+\approx
+K_q\Delta^{\zeta_q}</pre><p>이고 monofractal이라면</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\zeta_q\approx qH
+}</pre><p>다.</p><p>양변에 log를 취하면</p><pre class="math-expression" aria-label="원문의 수식 표기">\log m(q,\Delta)
+\approx
+\log K_q
++
+qH\log\Delta.</pre><p>즉 \(\log m\)을 \(\log\Delta\)에 회귀한 slope에서 \(H\)를 추정할 수 있다.</p><p>원논문은 DAX에서 \(H\approx0.125\), Bund에서 \(H\approx0.082\), S&amp;P에서 \(H\approx0.142\), NASDAQ에서 \(H\approx0.139\)를 보고했다. 여러 지수의 추정치는 대략 0.06~0.20 범위였고, daily realized variance를 쓰는 경우 integration 때문에 roughness가 실제보다 매끈하게 보여 \(H\)가 위쪽으로 bias될 수 있다고 지적했다. <a href="https://arxiv.org/pdf/1410.3394" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>이 수치는 오늘 시장의 실시간 \(H\)가 0.1이라는 뜻이 아니다. 당시 사용한 데이터와 추정법에서 보고된 empirical finding이다.</p></section><section><p class="chapter">07</p><h2>5. 두 시간척도만으로 \(H\)를 거칠게 추정해보자</h2><p><strong>교육용 가정</strong>으로 \(q=2\)에서</p><pre class="math-expression" aria-label="원문의 수식 표기">m(2,1)=0.040</pre><pre class="math-expression" aria-label="원문의 수식 표기">m(2,16)=0.06964</pre><p>라고 하자.</p><p>Scaling law가</p><pre class="math-expression" aria-label="원문의 수식 표기">m(2,\Delta)
+\propto
+\Delta^{2H}</pre><p>이므로</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{m(2,16)}{m(2,1)}
+=
+16^{2H}.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">H
+=
+\frac12
+\frac{
+\log(0.06964/0.040)
+}{
+\log16
+}
+\approx0.10.</pre><p>실제 연구에서는 두 점만 쓰지 않고 여러 \(\Delta\), 여러 \(q\)를 사용해 회귀하고 stability를 점검한다.</p><p>이 예제의 핵심은 \(H\)가 막연한 “roughness 점수”가 아니라 <strong>log-log scaling slope</strong>라는 것이다.</p></section><section><p class="chapter">08</p><h2>6. Rough와 long memory는 같은 말이 아니다</h2><p>이 부분이 가장 헷갈리기 쉽다.</p><p>fBM의 인접한 unit increment</p><pre class="math-expression" aria-label="원문의 수식 표기">X_1=W_1^H-W_0^H,
+\qquad
+X_2=W_2^H-W_1^H</pre><p>의 상관계수는</p><pre class="math-expression" aria-label="원문의 수식 표기">\rho_1
+=
+\frac12
+\left(
+2^{2H}-2
+\right).</pre><p>\(H=0.1\)이면</p><pre class="math-expression" aria-label="원문의 수식 표기">\rho_1
+\approx-0.426.</pre><p>반면 \(H=1/2\)이면</p><pre class="math-expression" aria-label="원문의 수식 표기">\rho_1=0.</pre><p>즉 rough fBM에서는 가까운 increment가 상당히 <strong>anti-persistent</strong>하다. 한 방향으로 움직인 뒤 다음 increment가 반대 방향으로 나올 경향이 있다는 뜻이지, 가격 자체가 mean reversion한다는 뜻은 아니다.</p><p>또 fBM increment의 장기 covariance는 대략</p><pre class="math-expression" aria-label="원문의 수식 표기">k^{2H-2}</pre><p>로 감소한다. \(H&lt;1/2\)이면 exponent가 \(-1\)보다 작아 covariance가 summable하다.</p><p>그래서</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{roughness}
+\neq
+\text{long memory}
+}</pre><p>다.</p><p>원논문의 흥미로운 주장 중 하나는 rough process에서 생성한 데이터를 기존 long-memory 통계절차에 넣으면 long memory가 있는 것처럼 보일 수 있다는 점이다. 즉 <strong>local roughness와 low-frequency persistence를 구분해야 한다.</strong> <a href="https://arxiv.org/pdf/1410.3394" target="_blank" rel="noopener noreferrer">arXiv</a></p></section><section><p class="chapter">09</p><h2>7. 옵션 surface와 연결되는 핵심: short-maturity skew</h2><p>Log-moneyness를</p><pre class="math-expression" aria-label="원문의 수식 표기">k=\log(K/F)</pre><p>라고 하고 implied volatility를</p><pre class="math-expression" aria-label="원문의 수식 표기">\sigma_{BS}(k,\tau)</pre><p>라고 하자.</p><p>ATM skew를</p><pre class="math-expression" aria-label="원문의 수식 표기">\psi(\tau)
+=
+\left.
+\frac{\partial\sigma_{BS}(k,\tau)}
+{\partial k}
+\right|_{k=0}</pre><p>라고 정의한다.</p><p>원논문은 Fukasawa의 asymptotic result를 이용해 fractional-volatility 계열에서는 짧은 만기에서</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\psi(\tau)
+\sim
+\tau^{H-1/2}
+}</pre><p>가 가능하다고 설명한다.</p><p>\(H=0.1\)이면</p><pre class="math-expression" aria-label="원문의 수식 표기">H-\frac12=-0.4</pre><p>이므로</p><pre class="math-expression" aria-label="원문의 수식 표기">\psi(\tau)
+\sim
+\tau^{-0.4}.</pre><p>원논문의 Figure 1.2에서 2013년 S&amp;P ATM skew의 term structure는 대략</p><pre class="math-expression" aria-label="원문의 수식 표기">A\tau^{-0.4}</pre><p>형태로 fit됐다. <a href="https://arxiv.org/pdf/1410.3394" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>이것이 rough volatility가 옵션시장에 매력적인 이유 중 하나다.</p><p>전통적인 time-homogeneous Brownian stochastic-volatility model은 매우 짧은 maturity에서 ATM skew가 대체로 유한한 수준에 머무는 반면, rough model은 <strong>연속경로를 유지하면서도 short-end skew를 매우 가파르게 만들 수 있다.</strong></p></section><section><p class="chapter">10</p><h2>8. 손계산: 1개월 skew와 4개월 skew</h2><p>\(H=0.1\)이라고 하자.</p><pre class="math-expression" aria-label="원문의 수식 표기">|\psi(\tau)|
+\propto
+\tau^{-0.4}.</pre><p>1개월을 \(\tau_1\), 4개월을</p><pre class="math-expression" aria-label="원문의 수식 표기">\tau_2=4\tau_1</pre><p>라고 하면</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{|\psi(\tau_1)|}
+{|\psi(\tau_2)|}
+=
+\left(
+\frac{\tau_1}{4\tau_1}
+\right)^{-0.4}
+=
+4^{0.4}
+\approx1.74.</pre><p>즉 이 단순 scaling에서는 1개월 ATM skew가 4개월 skew보다 약 74% 더 가파르다.</p><p>이 숫자를 현재 SPX 시장의 실제 비율로 해석하면 안 된다. 시장에는 jumps, event risk, supply-demand, discrete strikes 등이 함께 작용한다. 여기서는 <strong>roughness가 maturity scaling에 주는 방향과 크기</strong>를 이해하기 위한 계산이다.</p></section><section><p class="chapter">11</p><h2>9. \(P\)와 \(Q\)를 반드시 분리해야 한다</h2><p>원논문의 중요한 한계가 있다.</p><p>저자들이 high-frequency realized volatility에서 추정한 roughness는 주로 <strong>physical measure \(P\)</strong> 아래의 시계열 성질이다.</p><p>그러나 option price는 위험중립측도 \(Q\)에서</p><pre class="math-expression" aria-label="원문의 수식 표기">V_0
+=
+E^Q
+\left[
+e^{-\int_0^T r_tdt}
+h(S_T)
+\right]</pre><p>로 가격된다.</p><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">H_P\approx0.1</pre><p>을 발견했다고 해서 자동으로</p><pre class="math-expression" aria-label="원문의 수식 표기">H_Q=0.1</pre><p>이라고 둘 수 없다.</p><p>Volatility risk premium 때문에 \(P\)와 \(Q\)의 dynamics는 달라질 수 있다.</p><p>원논문도 결론에서 자신들의 RFSV model은 \(P\) 아래에서 기술됐고, option pricing을 위한 \(Q\) dynamics는 후속 문제라고 명시한다. <a href="https://arxiv.org/pdf/1410.3394" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>이는 금융공학에서 아주 중요한 원칙이다.</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{historical fit}
+\neq
+\text{pricing measure specification}
+}</pre><p>이다.</p></section><section><p class="chapter">12</p><h2>10. 왜 fBM을 주가에 직접 넣지 않는가</h2><p>\(H\neq1/2\)인 fBM은 일반적으로 semimartingale이 아니다. 따라서 tradable asset price 자체를 단순하게 fBM으로 바꾸면 표준 Itô calculus와 self-financing no-arbitrage framework를 그대로 적용하기 어렵다.</p><p>그래서 현대 rough-volatility model은 보통 <strong>주가 자체는 표준 Brownian-driven semimartingale로 유지</strong>하고, variance 또는 forward variance dynamics에 rough kernel을 넣는다.</p><p>개념적으로</p><pre class="math-expression" aria-label="원문의 수식 표기">\frac{dS_t}{S_t}
+=
+(r-q)dt
++
+\sqrt{V_t}\,dW_t</pre><p>를 유지하면서</p><pre class="math-expression" aria-label="원문의 수식 표기">V_t
+=
+V_0
++
+\int_0^t
+K(t-s)b(V_s)ds
++
+\int_0^t
+K(t-s)a(V_s)dB_s</pre><p>처럼 variance가 과거 noise의 Volterra convolution을 기억하도록 한다.</p><p>Rough kernel은 대표적으로</p><pre class="math-expression" aria-label="원문의 수식 표기">K(u)
+\propto
+u^{H-1/2},
+\qquad
+0&lt;H&lt;1/2</pre><p>형태다.</p><p>\(H&lt;1/2\)이면 exponent가 음수이므로 최근 shock에 매우 높은 weight가 실리고, 시간이 지나면서 빠르게 감소한다.</p><p>이건 “아주 오래 기억한다”라기보다</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{최근 충격에 매우 민감하다}
+}</pre><p>에 더 가까운 직관이다.</p></section><section><p class="chapter">13</p><h2>11. Dupire와 rough volatility는 경쟁모델이라기보다 다른 질문에 답한다</h2><p>10월 3일에 본 Dupire local volatility는 오늘의 전체 European option surface를 정확히 재현하는 하나의 Markov diffusion을 역산했다.</p><p>장점은 vanilla fit이다.</p><p>단점은 future smile dynamics가 경직될 수 있다는 것이다.</p><p>Rough stochastic volatility는 반대로 volatility 자체의 시간적 구조와 short-end smile dynamics를 더 현실적으로 만들려 한다.</p><p>그 대가로 parameter가 추가되고, Markov property를 잃으며, pricing과 calibration이 어려워진다.</p><p>따라서 모델 선택은 대략</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{정확한 오늘의 표면 적합}
+\leftrightarrow
+\text{더 현실적인 미래 dynamics}
+}</pre><p>라는 trade-off를 포함한다.</p><p>실무에서는 local-stochastic-volatility, rough Heston, rough Bergomi, Markovian lift 같은 여러 절충이 사용된다.</p></section><section><p class="chapter">14</p><h2>12. 반대 관점: roughness 자체도 추정오차의 산물일 수 있다</h2><p>Rough-volatility 문헌에는 중요한 반론도 있다.</p><p>Fukasawa, Takabatake, Westphal의 <strong>“Is Volatility Rough?”</strong>는 latent spot volatility를 직접 볼 수 없기 때문에 realized-volatility measurement error가 naive scaling estimator에 들어가면 실제 process가 rough하지 않아도 rough하게 보일 수 있다고 지적했다. 저자들은 이 문제를 반영한 별도의 quasi-likelihood 접근을 제안했고, 그 방법으로도 volatility가 rough하다는 empirical conclusion을 얻었지만, 측정오차를 무시한 단순 scaling plot만으로 roughness를 확정해서는 안 된다는 점을 보여줬다. <a href="https://arxiv.org/abs/1905.04852?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">arXiv</a></p><p><a href="https://arxiv.org/abs/1905.04852?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Is Volatility Rough? — arXiv</a></p><p>교훈은</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{관측된 scaling law}
+\neq
+\text{latent process의 scaling law가 자동으로 확정됨}
+}</pre><p>이다.</p><p>특히 고빈도 데이터에서는 microstructure noise, sampling frequency, realized-volatility estimator 자체가 모델링 결과를 바꿀 수 있다.</p></section><section><p class="chapter">15</p><h2>13. 2025~2026 흐름: 이제 문제는 “rough한가?”에서 “얼마나 신뢰할 수 있게 calibrate하는가?”로 이동한다</h2><p>Rough Heston 같은 모델은 적은 parameter로 다양한 smile 구조를 만들 수 있지만 non-Markovian 구조 때문에 numerical pricing과 calibration이 어렵다.</p><p>2025년 Boyarchenko, de Innocentis, Levendorskiĭ의 연구는 rough-Heston calibration에서 numerical pricing error와 model error가 서로 상쇄되어 겉보기에는 잘 맞는 <strong>“ghost calibration”</strong>이 나타날 수 있다고 주장했다. 저자들은 특정 기존 calibration 사례를 더 정확한 pricer로 재평가했을 때 surface fit이 나빠질 수 있음을 보고했고, pricing error control 자체가 calibration 신뢰성의 일부라고 강조했다. 이는 특정 구현과 parameter set을 분석한 연구결과이지 rough Heston 전체가 부정확하다는 뜻은 아니다. <a href="https://arxiv.org/abs/2508.15080?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">arXiv</a></p><p><a href="https://arxiv.org/abs/2508.15080?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Fast reliable pricing and calibration of the rough Heston model</a></p><p>그리고 2026-10-02 공개된 Afzali, Della Corte, Papapantoleon의 매우 최신 preprint는 Heston과 rough Heston neural calibration을 SHAP 계열 방법으로 분석했다. 저자들은 자신들의 실험에서 <strong>짧은 maturity와 smile wing이 parameter inference에 특히 중요한 정보</strong>를 담고 있고, calibration input에는 상당한 redundancy가 있다고 보고했다. 이 결과는 현재 막 공개된 preprint이므로 후속 검증이 필요하다. <a href="https://arxiv.org/abs/2610.03076?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">arXiv</a></p><p>이 흐름은 rough volatility의 다음 단계가 단순히 더 복잡한 model을 만드는 것이 아니라</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{parameter identifiability}
++
+\text{numerical error}
++
+\text{calibration uncertainty}
+}</pre><p>를 함께 관리하는 방향임을 보여준다.</p></section><section><p class="chapter">16</p><h2>14. 시스템·신호처리 렌즈: \(H\)는 scale을 바꿀 때 남는 구조다</h2><p>Roughness를 금융 전용 개념으로만 볼 필요는 없다.</p><p>Network traffic, 지형, turbulence, image texture처럼 scale-free 현상을 다루는 분야에서도</p><pre class="math-expression" aria-label="원문의 수식 표기">\text{measurement scale}
+\rightarrow
+\text{variation scale}</pre><p>관계를 분석한다.</p><p>\(H\)는 바로 이런 scaling law의 exponent다.</p><p>따라서 rough-volatility 추정은 본질적으로</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{signal의 local regularity를 log-log slope에서 찾는 문제}
+}</pre><p>다.</p><p>그리고 모든 scaling estimation에서 똑같은 위험이 나타난다.</p><p>관측구간이 너무 좁거나, noise floor가 있거나, aggregation이 들어가면 slope가 왜곡될 수 있다.</p></section><section><p class="chapter">17</p><h2>15. 의사결정 렌즈: “모델이 잘 맞는다”와 “원인이 맞다”는 다르다</h2><p>Rough-volatility model이 option surface를 잘 fit한다고 하자.</p><p>가능한 해석은 여러 개다.</p><p>실제 variance path가 rough할 수도 있고, jump risk를 rough continuous process가 대신 흉내낼 수도 있다. Microstructure의 order splitting이 aggregate roughness를 만들 수도 있고, calibration error와 numerical approximation이 특정 구간에서 맞물릴 수도 있다.</p><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{좋은 fit}
+\neq
+\text{causal mechanism의 확인}
+}</pre><p>이다.</p><p>모델은 reality 자체라기보다 목적에 따라 선택하는 압축된 representation으로 보는 편이 안전하다.</p></section><section><p class="chapter">18</p><h2>16. 위험관리 렌즈: point estimate보다 model uncertainty가 중요해진다</h2><p>예를 들어 rough-Heston calibration이</p><pre class="math-expression" aria-label="원문의 수식 표기">H=0.08</pre><p>이라는 숫자를 주었다고 하자.</p><p>실제 의사결정에서 더 중요한 질문은</p><pre class="math-expression" aria-label="원문의 수식 표기">H\in[0.05,0.15]</pre><p>정도의 uncertainty가 barrier price, forward-start option, vega hedge에 얼마나 큰 영향을 주느냐일 수 있다.</p><p>최근 연구가 point calibration을 넘어 posterior distribution, feature attribution, input redundancy를 다루는 이유가 여기에 있다.</p><p>Calibration parameter는 “관측된 truth”가 아니라 <strong>inverse problem의 결과</strong>다.</p></section><section><p class="chapter">19</p><h2>오늘 기억할 한 문장</h2><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\text{Rough volatility의 핵심은 “변동성이 오래 기억한다”가 아니라
+시간척도를 줄여도 불규칙성이 매우 천천히 사라진다는 것이다.}
+}</pre><p>수식으로는</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+E|\Delta\log\sigma|^q
+\propto
+\Delta^{qH},
+\qquad
+H\approx0.1
+}</pre><p>이며, 옵션시장에서는</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+\psi(\tau)
+\sim
+\tau^{H-1/2}
+}</pre><p>라는 short-maturity skew와 연결된다.</p><p>그러나 가장 중요한 모델링 원칙은</p><pre class="math-expression" aria-label="원문의 수식 표기">\boxed{
+P\text{에서 관측한 roughness}
+\neq
+Q\text{에서 사용할 pricing dynamics가 자동으로 결정됨}
+}</pre><p>이라는 점이다.</p></section><section><p class="chapter">20</p><h2>추가 학습 자료 — 정확히 3개</h2><p><strong>1. “Rough volatility: evidence from option prices” — Giulia Livieri, Saad Mouti, Andrea Pallavicini, Mathieu Rosenbaum, 2017-02-09.</strong> 역사적 realized-volatility 자료가 아니라 S&amp;P 500의 short-maturity ATM option 정보를 통해 roughness를 다시 본다. 오늘의 \(P\)-측도 시계열 분석에서 옵션시장 관점으로 넘어가는 좋은 다리다. Abstract와 short-maturity scaling 부분을 보고 <strong>“실현변동성에서 얻은 \(H\)와 option-implied \(H\)가 왜 같지 않을 수 있는가?”</strong>에 집중하라. 예상 학습시간은 <strong>25~35분</strong>이다. <a href="https://arxiv.org/abs/1702.02777?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">arXiv</a>  <br><a href="https://arxiv.org/abs/1702.02777?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Rough volatility: evidence from option prices</a></p><p><strong>2. “Rough Volatility, Chapter 2: Pricing under rough volatility” — Christian Bayer, Peter K. Friz, Jim Gatheral / SIAM, 2023-12-18.</strong> Rough process를 실제 option-pricing framework로 가져갈 때 필요한 forward variance와 pricing 논리를 정식으로 이어간다. 오늘의 empirical scaling에서 risk-neutral pricing으로 넘어가는 수학적 연결에 집중하라. 예상 학습시간은 <strong>45~60분</strong>이다. <a href="https://epubs.siam.org/doi/10.1137/1.9781611977783.ch2?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">SIAM</a>  <br><a href="https://epubs.siam.org/doi/10.1137/1.9781611977783.ch2?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">SIAM — Pricing under rough volatility</a></p><p><strong>3. “Shapley-based Structural Analysis of Neural Calibration for Stochastic Volatility Models” — Shaïn Afzali, Serena Della Corte, Antonis Papapantoleon, 2026-10-02.</strong> 오늘 기준 매우 최신 preprint다. Heston과 rough Heston neural calibration에서 어떤 maturity·moneyness 영역이 parameter 추정에 실제 정보를 주는지를 SHAP·νSHAP으로 분석한다. <strong>“왜 짧은 maturity와 smile wing이 rough-model parameter identification에 중요한가?”</strong>, <strong>“낮은 calibration error가 곧 높은 identifiability를 의미하는가?”</strong>에 집중하라. 예상 학습시간은 <strong>35~50분</strong>이다. <a href="https://arxiv.org/abs/2610.03076?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">arXiv</a>  <br><a href="https://arxiv.org/abs/2610.03076?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Shapley-based Structural Analysis of Neural Calibration for Stochastic Volatility Models</a></p></section><section class="question-section"><p class="eyebrow">PAUSE & REFLECT</p><h2>잠깐, 내 언어로 설명해 보기</h2><div class="question-item"><h3>Q1.</h3><p>fBM-type log-volatility에서</p><pre class="math-expression" aria-label="원문의 수식 표기">m(2,\Delta)
+\propto
+\Delta^{2H}</pre><p>라고 하자.</p><p>관측값이</p><pre class="math-expression" aria-label="원문의 수식 표기">m(2,1)=0.05,
+\qquad
+m(2,25)=0.0952</pre><p>라면 \(H\)를 추정하라.</p><p>힌트:</p><pre class="math-expression" aria-label="원문의 수식 표기">H=
+\frac12
+\frac{
+\log[m(2,25)/m(2,1)]
+}{
+\log25
+}.</pre><details><summary>해설 보기 +</summary><pre class="math-expression" aria-label="원문의 수식 표기">\frac{0.0952}{0.05}
+=
+1.904.</pre><p>따라서</p><pre class="math-expression" aria-label="원문의 수식 표기">H
+=
+\frac12
+\frac{\log1.904}{\log25}
+\approx0.10.</pre><p>핵심은 variance-type moment의 log-log slope가 \(2H\)라는 것이다.</p></details></div><div class="question-item"><h3>Q2.</h3><p>fBM의 인접 unit increment correlation이</p><pre class="math-expression" aria-label="원문의 수식 표기">\rho_1
+=
+\frac12
+(2^{2H}-2)</pre><p>라고 하자.</p><p>1. \(H=0.1\)일 때 부호와 대략적인 크기를 구하라.<br>2. \(H=0.5\)에서는 얼마인가?<br>3. 이것이 roughness와 long memory가 같은 개념이 아닌 이유와 어떻게 연결되는가?</p><details><summary>해설 보기 +</summary><p>\(H=0.1\)이면</p><pre class="math-expression" aria-label="원문의 수식 표기">\rho_1
+=
+\frac12(2^{0.2}-2)
+\approx-0.426.</pre><p>\(H=0.5\)이면</p><pre class="math-expression" aria-label="원문의 수식 표기">\rho_1
+=
+\frac12(2-2)
+=
+0.</pre><p>즉 rough fBM은 가까운 increment가 음의 상관을 보인다. Roughness는 local path regularity이고, long memory는 먼 시차의 covariance가 얼마나 천천히 감소하는가에 관한 개념이므로 둘을 분리해야 한다.</p></details></div><div class="question-item"><h3>Q3.</h3><p>ATM skew가</p><pre class="math-expression" aria-label="원문의 수식 표기">|\psi(\tau)|
+\propto
+\tau^{H-1/2}</pre><p>이고 \(H=0.1\)이라고 하자.</p><p>1개월과 9개월 maturity를 비교하면 1개월 skew는 9개월 skew의 몇 배인가?</p><p>또 이 결과가 실제확률 \(P\)에서 “9개월 안에 폭락할 확률”을 직접 알려주지 않는 이유를 설명하라.</p><details><summary>해설 보기 +</summary><pre class="math-expression" aria-label="원문의 수식 표기">\frac{|\psi(1M)|}{|\psi(9M)|}
+=
+\left(\frac19\right)^{-0.4}
+=
+9^{0.4}
+\approx2.41.</pre><p>따라서 이 scaling만 놓고 보면 1개월 skew가 약 2.4배 더 가파르다.</p><p>그러나 implied-volatility skew는 \(Q\) 측도 아래의 state-price와 risk premium을 반영한다. 실제 발생빈도인 \(P\)와 동일하지 않으며, jump premium, tail-insurance 수요, 유동성 등의 영향도 받을 수 있다.</p></details></div></section><section class="sources"><p class="eyebrow">READ FURTHER</p><h2>원고에 포함된 자료</h2><p class="source-date">원고에 기재된 출처를 보존했습니다. 아카이브 수록일에 자료를 다시 검증했다는 뜻은 아닙니다.</p><ol><li><a href="https://arxiv.org/pdf/1410.3394" target="_blank" rel="noopener noreferrer">arXiv ↗</a><p>2026-10-06 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://arxiv.org/abs/1410.3394?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">중심 원자료 — Volatility is rough, arXiv ↗</a><p>2026-10-06 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://arxiv.org/abs/1905.04852?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Is Volatility Rough? — arXiv ↗</a><p>2026-10-06 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://arxiv.org/abs/2508.15080?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Fast reliable pricing and calibration of the rough Heston model ↗</a><p>2026-10-06 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://arxiv.org/abs/2610.03076?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Shapley-based Structural Analysis of Neural Calibration for Stochastic Volatility Models ↗</a><p>2026-10-06 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://arxiv.org/abs/1702.02777?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">Rough volatility: evidence from option prices ↗</a><p>2026-10-06 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li><li><a href="https://epubs.siam.org/doi/10.1137/1.9781611977783.ch2?utm_source=chatgpt.com" target="_blank" rel="noopener noreferrer">SIAM — Pricing under rough volatility ↗</a><p>2026-10-06 발행 원고에 포함된 출처입니다. 이번 이관에서 새로 검증하지 않았습니다.</p></li></ol></section></div><div class="back-bottom"><a href="../index.html#archive">← 다른 읽을거리 살펴보기</a><span>조금씩, 오래.</span></div></main><footer><a href="../index.html" class="brand"><svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M3 4h9c2 0 3 1 3 3v17c-1-2-3-3-6-3H3V4Zm22 0h-7v17h7V4Z" fill="currentColor"/></svg><span>매일의 발견</span></a><p>공개 학습 아카이브 · 시간대 Asia/Seoul</p><span>오래 남을 배움을 위해.</span></footer><script src="../reading.js" defer></script></body></html>
